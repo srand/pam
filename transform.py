@@ -102,6 +102,87 @@ class Settings(object):
     @toolchain.setter
     def toolchain(self, toolchain):
         self._toolchain = toolchain
+        
+        
+class MSVCCompilerDriver(object):
+    def __init__(self, cxx=False, env=None):
+        self._executable = "cl.exe"
+        self._output_ext = ".obj"
+        self._cxx = cxx
+        self._env = env
+        
+    def _product(self, source_file):
+        return '{}{}'.format(source_file, self._output_ext)
+        
+    def _cmdline(self, settings, source_file):
+        defines1 = ['/D{}'.format(name) for name, value in settings.defines if not value ]
+        defines2 = ['/D{}={}'.format(name, value) for name, value in settings.defines if value ]
+        flags = settings.cflags if not self._cxx else settings.cxxflags
+        incpaths = ['/I{}'.format(path) for path in settings.incpaths]
+
+        return "{} /nologo {} {} {} {} /c {} /Fo{}".format(
+            self._executable, 
+            ' '.join(flags),
+            ' '.join(defines1),
+            ' '.join(defines2),
+            ' '.join(incpaths),
+            source_file, 
+            self._product(source_file))
+
+    def _info(self, source_file):
+        return ' [{}] {}'.format(self._executable.upper(), source_file)
+
+    def prepare(self, settings, source_file):
+        return Command(self._product(source_file), self._cmdline(settings, source_file), self._info(source_file), env=self._env)
+
+
+class MSVCLinkerDriver(object):
+    def __init__(self, env=None):
+        self._executable = 'link.exe'
+        self._output_ext = '.exe'
+        self._env = env
+
+    def _product(self, executable):
+        return '{}{}'.format(executable, self._output_ext)
+
+    def _cmdline(self, settings, executable, object_files):
+        libpaths = ['/libpath:{}'.format(path) for path in settings.libpaths]
+        libraries = ['{}.lib'.format(path) for path in settings.libraries]
+        flags = settings.linkflags
+
+        return "{} /nologo {} {} {} {} /out:{}".format(
+            self._executable, 
+            ' '.join(libpaths),
+            ' '.join(libraries),
+            ' '.join(flags),
+            ' '.join(object_files),
+            self._product(executable))
+
+    def _info(self, executable):
+        return ' [{}] {}'.format(self._executable.upper(), executable)
+
+    def prepare(self, settings, executable, object_files):
+        return Command(self._product(executable), self._cmdline(settings, executable, object_files), self._info(executable), env=self._env)
+
+
+class MSVCArchiverDriver(object):
+    def __init__(self, env=None):
+        self._executable = 'lib.exe'
+        self._output_pfx = ''
+        self._output_ext = '.lib'
+        self._env = env
+
+    def _product(self, name):
+        return '{}{}{}'.format(self._output_pfx, name, self._output_ext)
+
+    def _cmdline(self, name, object_files):
+        return "{} /nologo /out:{} {}".format(self._executable, self._product(name), ' '.join(object_files))
+
+    def _info(self, name):
+        return ' [{}] {}'.format(self._executable.upper(), name)
+
+    def prepare(self, settings, name, object_files):
+        return Command(self._product(name), self._cmdline(name, object_files), self._info(name), env=self._env)
 
 
 class GNUCompilerDriver(object):
@@ -226,6 +307,17 @@ class CXXToolchain(Toolchain):
         self._cxx_linker = linker_driver
 
 
+class MSVCCXXToolchain(CXXToolchain):
+    def __init__(self, settings=Settings(), env=None):
+        super(MSVCCXXToolchain, self).__init__(settings)
+        self.add_tool('.s', MSVCCompilerDriver(env=env))
+        self.add_tool('.c', MSVCCompilerDriver(env=env))
+        self.add_tool('.cc', MSVCCompilerDriver(cxx=True, env=env))
+        self.add_tool('.cpp', MSVCCompilerDriver(cxx=True, env=env))
+        self.archiver = MSVCArchiverDriver(env=env)
+        self.linker = MSVCLinkerDriver(env=env)
+
+
 class GNUCXXToolchain(CXXToolchain):
     def __init__(self, settings=Settings()):
         super(GNUCXXToolchain, self).__init__(settings)
@@ -257,6 +349,7 @@ def mac_x86_libcxx_settings():
     toolchain.settings.add_linkflag('-stdlib=libc++')
     return Settings(toolchain.settings)
 
+
 def ios_x86_libcxx_settings():
     toolchain = ClangCXXToolchain()
     toolchain.settings.add_cflag('-m32')
@@ -271,8 +364,8 @@ def ios_x86_libcxx_settings():
     toolchain.settings.add_cxxflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
     toolchain.settings.add_linkflag('-isysroot')
     toolchain.settings.add_linkflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
-
     return Settings(toolchain.settings)
+
 
 def ios_armv7_libcxx_settings():
     toolchain = ClangCXXToolchain()
@@ -293,8 +386,35 @@ def ios_armv7_libcxx_settings():
     toolchain.settings.add_cxxflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
     toolchain.settings.add_linkflag('-isysroot')
     toolchain.settings.add_linkflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
-
     return Settings(toolchain.settings)
+
+
+def win_x86_vs2015xp_settings():
+    def create_env():
+        env = copy(os.environ)
+        
+        installdir = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0'
+        if not os.path.exists(installdir):
+            raise RuntimeError('VS2015 is not installed')
+        
+        common7ide = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE'
+        vcbin = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\BIN'
+        common7tools = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools'
+        include = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE;C:\Program Files (x86)\Windows Kits\10\\include\10.0.10056.0\ucrt;C:\Program Files (x86)\Windows Kits\8.1\include\shared;C:\Program Files (x86)\Windows Kits\8.1\include\um;C:\Program Files (x86)\Windows Kits\8.1\include\winrt;'
+        lib = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\LIB;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\LIB;C:\Program Files (x86)\Windows Kits\10\\lib\10.0.10056.0\ucrt\x86;C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86;'
+        libpath = r'C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\LIB;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\LIB;C:\Program Files (x86)\Windows Kits\8.1\References\CommonConfiguration\Neutral;\Microsoft.VCLibs\14.0\References\CommonConfiguration\neutral;'
+        
+        env['VSINSTALLDIR'] = installdir
+        env['PATH'] = '{};{};{};{}'.format(common7ide, vcbin, common7tools, env['PATH'])
+        env['VS140COMNTOOLS'] = common7tools
+        env['INCLUDE'] = include 
+        env['LIB'] = lib 
+        env['LIBPATH'] = libpath 
+        return env
+    
+    toolchain = MSVCCXXToolchain(create_env())
+    return Settings(toolchain.settings)
+
 
 
 class Job(object):
@@ -335,10 +455,11 @@ class Source(Job):
 
 
 class Command(Job):
-    def __init__(self, product, cmdline, info=None):
+    def __init__(self, product, cmdline, info=None, env=None):
         super(Command, self).__init__(product)
         self._cmdline = cmdline
         self._info = info
+        self._env = env
 
     @property
     def cmdline(self):
@@ -356,7 +477,8 @@ class Command(Job):
             dep.execute()
 
         print self.info
-        p = subprocess.Popen(self.cmdline, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        print '\t', self.cmdline
+        p = subprocess.Popen(self.cmdline, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, env=self._env)
         s = iter(p.stdout.readline, b'')
         p.wait()
         for line in s: print line.strip()
@@ -405,11 +527,14 @@ class CCXXTransformer(BaseTransformer):
         self._source_regex = [] 
         self._source_files = []
         self._object_files = []
-        self._settings = settings
+        self._settings = Settings(settings)
 
     @property
     def settings(self):
         return self._settings
+
+    def add_incpath(self, path):
+        self.settings.add_incpath(path)
 
     def add_sources(self, path, regex=r'.*', recurse=False):
         self._source_regex.append((path, regex, recurse))
