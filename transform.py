@@ -339,7 +339,14 @@ class ClangCXXToolchain(CXXToolchain):
         self.archiver = GNUArchiverDriver()
         self.linker = GNULinkerDriver(cxx=True, executable='clang++')
 
-        
+
+def linux_x86_settings():
+    toolchain = GNUCXXToolchain()
+    toolchain.settings.add_cflag('-m32')
+    toolchain.settings.add_cxxflag('-m32')
+    toolchain.settings.add_linkflag('-m32')
+    return Settings(toolchain.settings)
+
 def mac_x86_libcxx_settings():
     toolchain = ClangCXXToolchain()
     toolchain.settings.add_cflag('-m32')
@@ -477,7 +484,7 @@ class Command(Job):
             dep.execute()
 
         print self.info
-        print '\t', self.cmdline
+        # print '\t', self.cmdline
         p = subprocess.Popen(self.cmdline, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, env=self._env)
         s = iter(p.stdout.readline, b'')
         p.wait()
@@ -524,7 +531,7 @@ class BaseTransformer(Transformer):
 class CCXXTransformer(BaseTransformer):
     def __init__(self, settings=Settings()):
         super(CCXXTransformer, self).__init__()
-        self._source_regex = [] 
+        self._source_regex = []
         self._source_files = []
         self._object_files = []
         self._settings = Settings(settings)
@@ -535,6 +542,9 @@ class CCXXTransformer(BaseTransformer):
 
     def add_incpath(self, path):
         self.settings.add_incpath(path)
+
+    def add_define(self, key, value=None):
+        self.settings.add_define(key, value)
 
     def add_sources(self, path, regex=r'.*', recurse=False):
         self._source_regex.append((path, regex, recurse))
