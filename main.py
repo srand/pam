@@ -1,20 +1,18 @@
-from transform import Library
-from transform import Executable
-from transform import GNUCompilerDriver
-from transform import mac_x86_libcxx_settings
-from transform import ios_x86_libcxx_settings
-from transform import ios_armv7_libcxx_settings
-from transform import win_x86_vs2015xp_settings
+from project import CXXLibrary
+from project import CXXExecutable
+from transform.msbuild import MSBuildCXXToolchain
+from transform.native import MSVCCXXToolchain
+from transform.native import VS2015Environment
 
-settings = win_x86_vs2015xp_settings()
-settings.add_define('FOOBAR')
+#toolchain = MSVCCXXToolchain(VS2015Environment())
+toolchain = MSBuildCXXToolchain('Debug', 'Win32', 'v120_xp')
 
-lib = Library('zlib', settings)
+lib = CXXLibrary('zlib')
 lib.add_sources('tests/zlib', r'.*\.c$')
-lib.transform()
+lib.transform(toolchain)
 
-example = Executable('tests/zlib/zpipe', settings)
+example = CXXExecutable('zpipe')
 example.add_sources('tests/zlib/examples/zpipe.c')
 example.add_incpath('tests/zlib')
-example.add_library(lib)
-example.transform()
+example.add_dependency(lib)
+example.transform(toolchain)
