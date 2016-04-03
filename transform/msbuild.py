@@ -598,16 +598,18 @@ class MSBuildCXXToolchain(Toolchain):
 		cxx_project.properties_group.outdir = "output/{}/".format(project.name)
 		cxx_project.properties_group.targetpath = "$(OutDir)$(TargetName)$(TargetExt)"
 
-		for source in project.sources:
-			root, ext = os.path.splitext(source.path)
-			tool = self.get_tool(ext)
-			if tool is None:
-				raise RuntimeError()
-			tool.prepare(cxx_project, source.path)
+		groups = project.source_groups + [project]
+		for group in groups:
+			for source in group.sources:
+				root, ext = os.path.splitext(source.path)
+				tool = self.get_tool(ext)
+				if tool is None:
+					raise RuntimeError()
+				tool.prepare(cxx_project, source.path)
 		cxx_project.write('{}.vcxproj'.format(project.name))
 		
 		msbuild = r'"C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe"'
-		rc, _ = utils.execute('{} {}.vcxproj /p:Configuration={} /p:Platform={}'.format(
+		rc, _ = utils.execute('{} {}.vcxproj /nologo /p:Configuration={} /p:Platform={}'.format(
 			msbuild, project.name, self.config, self.machine), VS2015Environment())
 		if rc != 0:
 			raise RuntimeError()
