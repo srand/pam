@@ -7,9 +7,10 @@ from copy import copy
 
 
 class Toolchain(object):
-    def __init__(self):
+    def __init__(self, name):
         super(Toolchain, self).__init__()
         self._tools = {}
+        self.name = name
 
     def transform(self, project):
         pass

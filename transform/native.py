@@ -8,7 +8,7 @@ from copy import copy
 class Settings(object):
     def __init__(self, template_settings=None):
         if template_settings:
-            self._defines = copy(template_settings._defines)
+            self._macros = copy(template_settings._macros)
             self._incpaths = copy(template_settings._incpaths)
             self._libpaths = copy(template_settings._libpaths)
             self._cflags = copy(template_settings._cflags)
@@ -16,7 +16,7 @@ class Settings(object):
             self._linkflags = copy(template_settings._linkflags)
             self._libraries = copy(template_settings._libraries)
         else:
-            self._defines = set()
+            self._macros = set()
             self._incpaths = set()
             self._libpaths = set()
             self._cflags = []
@@ -24,12 +24,12 @@ class Settings(object):
             self._linkflags = []
             self._libraries = []
 
-    def add_define(self, name, value=None):
-        self._defines.add((name, value))
+    def add_macro(self, name, value=None):
+        self._macros.add((name, value))
 
     @property
-    def defines(self):
-        return self._defines
+    def macros(self):
+        return self._macros
 
     def add_incpath(self, path):
         self._incpaths.add(path)
@@ -140,7 +140,7 @@ class Command(Job):
             dep.execute()
 
         print self.info
-        # print '\t', self.cmdline
+        print '\t', self.cmdline
         rc, stdout = utils.execute(self._cmdline, self._env)
         if rc != 0: raise RuntimeError('job failed')
         self._completed = True
@@ -162,16 +162,17 @@ class MSVCCompilerDriver(object):
         return '{}{}'.format(source_file, self._output_ext)
         
     def _cmdline(self, settings, source_file):
-        defines1 = ['/D{}'.format(name) for name, value in settings.defines if not value ]
-        defines2 = ['/D{}={}'.format(name, value) for name, value in settings.defines if value ]
-        flags = settings.cflags if not self._cxx else settings.cxxflags
+        def key_value(key, value):
+            return "{}".format(key) if value is None else "{}={}".format(key, value)
+		
+        definitions = ['/D{}'.format(key_value(key, value)) for key, value in settings.macros ]
         incpaths = ['/I{}'.format(path) for path in settings.incpaths]
+        flags = settings.cflags if not self._cxx else settings.cxxflags
 
-        return "{} /nologo {} {} {} {} /c {} /Fo{}".format(
+        return "{} /nologo {} {} {} /c {} /Fo{}".format(
             self._executable, 
             ' '.join(flags),
-            ' '.join(defines1),
-            ' '.join(defines2),
+            ' '.join(definitions),
             ' '.join(incpaths),
             source_file, 
             self._product(source_file))
@@ -242,16 +243,17 @@ class GNUCompilerDriver(object):
         return '{}{}'.format(source_file, self._output_ext)
 
     def _cmdline(self, settings, source_file):
-        defines1 = ['-D{}'.format(name) for name, value in settings.defines if not value ]
-        defines2 = ['-D{}={}'.format(name, value) for name, value in settings.defines if value ]
-        flags = settings.cflags if not self._cxx else settings.cxxflags
+        def key_value(key, value):
+            return "{}".format(key) if value is None else "{}={}".format(key, value)
+		
+        definitions = ['-D{}'.format(key_value(key, value)) for key, value in settings.macros ]
         incpaths = ['-I{}'.format(path) for path in settings.incpaths]
+        flags = settings.cflags if not self._cxx else settings.cxxflags
 
-        return "{} {} {} {} {} -c {} -o {}".format(
+        return "{} {} {} {} -c {} -o {}".format(
             self._executable, 
             ' '.join(flags),
-            ' '.join(defines1),
-            ' '.join(defines2),
+            ' '.join(definitions),
             ' '.join(incpaths),
             source_file, 
             self._product(source_file))
@@ -312,8 +314,8 @@ class GNUArchiverDriver(object):
 
 
 class CXXToolchain(Toolchain, Settings):
-    def __init__(self):
-        super(CXXToolchain, self).__init__()
+    def __init__(self, name):
+        super(CXXToolchain, self).__init__(name)
         self._tools = {}
         self._cxx_archiver = None
         self._cxx_linker = None
@@ -345,12 +347,17 @@ class CXXToolchain(Toolchain, Settings):
     def transform(self, project):
         cxx_project = NativeCXXProject(self, project.name)
         
-        for path in project.incpaths:
-            cxx_project.add_incpath(path)
-        for key, value in project.macros:
-            cxx_project.add_define(key, value)
+        for incpath in project.incpaths:
+            if incpath.matches(self.name):
+                cxx_project.add_incpath(incpath.path)
+        for libpath in project.libpaths:
+            if libpath.matches(self.name):
+                cxx_project.add_libpath(libpath.path)
+        for macro in project.macros:
+            if macro.matches(self.name):
+                cxx_project.add_macro(macro.key, macro.value)
         for dep in project.dependencies:
-            if isinstance(dep, project_type.Library):
+            if isinstance(dep, project_type.CXXLibrary):
                 cxx_project.add_library(dep.name)            
 
         for source in project.sources:
@@ -444,8 +451,8 @@ def VS2015Environment():
 
 
 class MSVCCXXToolchain(CXXToolchain):
-    def __init__(self, env=None):
-        super(MSVCCXXToolchain, self).__init__()
+    def __init__(self, name, env=None):
+        super(MSVCCXXToolchain, self).__init__(name)
         self.add_tool('.s', MSVCCompilerDriver(env=env))
         self.add_tool('.c', MSVCCompilerDriver(env=env))
         self.add_tool('.cc', MSVCCompilerDriver(cxx=True, env=env))
@@ -455,8 +462,8 @@ class MSVCCXXToolchain(CXXToolchain):
 
 
 class GNUCXXToolchain(CXXToolchain):
-    def __init__(self):
-        super(GNUCXXToolchain, self).__init__()
+    def __init__(self, name):
+        super(GNUCXXToolchain, self).__init__(name)
         self.add_tool('.S', GNUCompilerDriver(cxx=False, executable='gcc'))
         self.add_tool('.c', GNUCompilerDriver(cxx=False, executable='gcc'))
         self.add_tool('.cc', GNUCompilerDriver(cxx=True, executable='g++'))
@@ -466,8 +473,8 @@ class GNUCXXToolchain(CXXToolchain):
 
 
 class ClangCXXToolchain(CXXToolchain):
-    def __init__(self):
-        super(ClangCXXToolchain, self).__init__()
+    def __init__(self, name):
+        super(ClangCXXToolchain, self).__init__(name)
         self.add_tool('.S', GNUCompilerDriver(cxx=False, executable='clang'))
         self.add_tool('.c', GNUCompilerDriver(cxx=False, executable='clang'))
         self.add_tool('.cc', GNUCompilerDriver(cxx=True, executable='clang++'))

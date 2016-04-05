@@ -88,6 +88,10 @@ class Group(SubElement):
 		super(Group, self).__init__(tag)
 		self.label = label	
 
+
+@Attribute('Keyword', child=True)
+@Attribute('CustomBuildAfterTargets', child=True)
+@Attribute('CustomBuildBeforeTargets', child=True)
 @Attribute('Keyword', child=True)
 @Attribute('ProjectGUID', child=True)
 @Attribute('ProjectName', child=True)
@@ -432,12 +436,32 @@ class Content(SubElement):
 @Attribute('LastGenOutput', child=True)
 @Attribute('CustomToolNamespace', child=True)
 @Attribute('Link', values=['false', 'true'], child=True)
+@Attribute('PublishState', values=['Default', 'Included', 'Excluded', 'DataFile', 'Prerequisite'], child=True)
+@Attribute('IsAssembly', values=['false', 'true'], child=True)
 @Attribute('Visible', values=['false', 'true'], child=True)
 @Attribute('CopyToOutputDirectory', values=['Never', 'Always', 'PreserveNewest'], child=True)
 @Attribute('Include')
 class NoneTask(SubElement):
 	def __init__(self):
-		super(NoneTask, self).__init__('None')
+		super(NoneTask, self).__init__('NoneTask')
+
+
+@Attribute('Command', child=True)
+@Attribute('Message', child=True)
+@Attribute('Outputs', child=True)
+@Attribute('Include')
+class CustomBuild(SubElement):
+	def __init__(self, include=None):
+		super(CustomBuild, self).__init__('CustomBuild')
+		self.include = include
+
+
+@Attribute('Command', child=True)
+@Attribute('Inputs', child=True)
+@Attribute('Outputs', child=True)
+class CustomBuildStep(SubElement):
+	def __init__(self):
+		super(CustomBuildStep, self).__init__('CustomBuildStep')
 
 
 @Attribute('DefaultTargets', varname='default_target')
@@ -479,6 +503,7 @@ class CXXPropertyGroup(PropertyGroup):
 
 
 @Composition(ClCompile, 'clcompile')
+@Composition(CustomBuild, 'custombuild')
 @Composition(Reference, 'reference')
 @Composition(COMReference, 'comreference')
 @Composition(COMFileReference, 'comfilereference')
@@ -491,6 +516,7 @@ class CXXItemGroup(ItemGroup):
 
 
 @Composition(ClCompile, 'clcompile')
+@Composition(CustomBuildStep, 'custombuildstep')
 @Composition(Lib, 'lib')
 @Composition(Link, 'link')		
 class CXXItemDefinitionGroup(ItemDefinitionGroup):
@@ -548,8 +574,8 @@ class ClCompileDriver(object):
 
 
 class MSBuildCXXToolchain(Toolchain):
-	def __init__(self, config, machine, toolset):
-		super(MSBuildCXXToolchain, self).__init__()
+	def __init__(self, config, machine, toolset, name):
+		super(MSBuildCXXToolchain, self).__init__(name)
 		self.config = config
 		self.machine = machine
 		self.toolset = toolset
@@ -573,11 +599,15 @@ class MSBuildCXXToolchain(Toolchain):
 		cxx_project.globals_group.projectguid = '{%s}' % project.uuid
 		cxx_project.globals_group.platform = self.machine
 
-		definitions1 = [key for key, value in project.macros]
-		definitions2 = ['{}={}'.format(key, value) for key, value in project.macros]
+		def key_value(key, value):
+			return key if value is None else "{}={}".format(key, value)
+		
+		definitions = [key_value(macro.key, macro.value) for macro in project.macros if macro.matches(self.name)]
+		incpaths = [incpath.path for incpath in project.incpaths if incpath.matches(self.name)]
+		libpaths = [libpath.path for libpath in project.libpaths if libpath.matches(self.name)]
 
-		cxx_project.clcompile.additionalincludedirectories = ';'.join(project.incpaths)
-		cxx_project.clcompile.preprocessordefinitions = ';'.join(definitions1 + definitions2)
+		cxx_project.clcompile.additionalincludedirectories = ';'.join(incpaths)
+		cxx_project.clcompile.preprocessordefinitions = ';'.join(definitions)
 		cxx_project.clcompile.trackerlogdirectory = "$(IntDir)"
 
 		if isinstance(project, projects.CXXLibrary):
@@ -589,7 +619,7 @@ class MSBuildCXXToolchain(Toolchain):
 			libraries = [dep.name for dep in project.dependencies if isinstance(dep, projects.CXXLibrary)]
 			libraries = ['{}.lib'.format(lib) for lib in libraries]
 			cxx_project.link.additionaldependencies = ';'.join(libraries)
-			cxx_project.link.additionallibrarydirectories = 'output/'
+			cxx_project.link.additionallibrarydirectories = ';'.join(libpaths)
 			cxx_project.link.subsystem = "Console"
 
 		cxx_project.config_props.toolset = self.toolset

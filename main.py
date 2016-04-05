@@ -4,15 +4,15 @@ from transform.msbuild import MSBuildCXXToolchain
 from transform.native import MSVCCXXToolchain
 from transform.native import VS2015Environment
 
-#toolchain = MSVCCXXToolchain(VS2015Environment())
-toolchain = MSBuildCXXToolchain('Debug', 'Win32', 'v120_xp')
+toolchain = MSVCCXXToolchain('win-x86-vs2013xp', VS2015Environment())
+#toolchain = MSBuildCXXToolchain('Debug', 'Win32', 'v120_xp', 'win-x86-vs2013xp')
 
-lib = CXXLibrary('zlib')
-lib.add_sources('tests/zlib', r'.*\.c$')
-lib.transform(toolchain)
+zlib = CXXLibrary('zlib')
+zlib.add_sources('tests/zlib', r'.*\.c$')
+zlib.transform(toolchain)
 
-example = CXXExecutable('zpipe')
-example.add_sources('tests/zlib/examples/zpipe.c')
-example.add_incpath('tests/zlib')
-example.add_dependency(lib)
-example.transform(toolchain)
+zpipe = CXXExecutable('zpipe')
+zpipe.add_sources('tests/zlib/examples/zpipe.c')
+zpipe.add_incpath('tests/zlib')
+zpipe.add_dependency(zlib)
+zpipe.transform(toolchain)
