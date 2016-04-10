@@ -1,7 +1,8 @@
-from toolchain import Toolchain
-import project as projects
-import utils
-from native import VS2015Environment
+from build import model
+from build.transform import utils
+from build.transform.toolchain import Toolchain
+from build.transform.visual_studio import VS14VCVars
+from build.feature import FeatureRegistry
 
 from xml.etree import ElementTree as ET
 from xml.etree.ElementTree import Element 
@@ -9,151 +10,161 @@ from xml.etree.ElementTree import ElementTree
 from xml.dom import minidom
 
 import os
+from copy import deepcopy
 
 
 class SubElement(Element):
-	def __init__(self, tag=''):
-		super(SubElement, self).__init__(tag)
+    def __init__(self, tag=''):
+        super(SubElement, self).__init__(tag)
 
 
 class Attribute(object):
-	def __init__(self, attribute, varname=None, child=False, values=None):
-		self.attribute = attribute
-		self.varname = varname if varname is not None else attribute.lower()
-		self.child = child
-		self.values = values
+    def __init__(self, attribute, varname=None, child=False, values=None):
+        self.attribute = attribute
+        self.varname = varname if varname is not None else attribute.lower()
+        self.child = child
+        self.values = values
     
-	def __call__(self, cls):
-		def decorate(cls, attribute, varname, child, values):
-			def _check_value(value, values):
-				if values and value not in values:
-					raise ValueError('{} is not one of {}'.format(value, values))
-			
-			def attr_get(self):
-				if attribute not in self.attrib:
-					return ''
-				return self.get(attribute)
+    def __call__(self, cls):
+        def decorate(cls, attribute, varname, child, values):
+            def _check_value(value, values):
+                if values and value not in values:
+                    raise ValueError('{} is not one of {}'.format(value, values))
+            
+            def attr_get(self):
+                if attribute not in self.attrib:
+                    return ''
+                return self.get(attribute)
 
-			def attr_set(self, value):
-				if value is None:
-					try:
-						self.attrib.pop(attribute)
-					except:
-						pass
-					finally:
-						return
-				_check_value(value, values)
-				return self.set(attribute, value)
-				
-			def child_get(self):
-				if not hasattr(self, '_'+varname):
-					return ''
-				return getattr(self, '_'+varname).text		
-				
-			def child_set(self, value):
-				_check_value(value, values)
-				if not hasattr(self, '_'+varname):
-					e = SubElement(attribute)
-					self.append(e)			
-					setattr(self, '_'+varname, e)
-				getattr(self,'_'+varname).text = value
-			
-			if not child:
-				setattr(cls, varname, property(attr_get, attr_set))
-			else:
-				setattr(cls, varname, property(child_get, child_set))
-			return cls
-		return decorate(cls, self.attribute, self.varname, self.child, self.values)
+            def attr_set(self, value):
+                if value is None:
+                    try:
+                        self.attrib.pop(attribute)
+                    except:
+                        pass
+                    finally:
+                        return
+                _check_value(value, values)
+                return self.set(attribute, value)
+                
+            def child_get(self):
+                if not hasattr(self, '_'+varname):
+                    return ''
+                return getattr(self, '_'+varname).text        
+    
+            def child_set(self, value):
+                _check_value(value, values)
+                if not value: return
+                if not hasattr(self, '_'+varname):
+                    e = SubElement(attribute)
+                    self.append(e)            
+                    setattr(self, '_'+varname, e)
+                getattr(self,'_'+varname).text = value
+            
+            if not child:
+                setattr(cls, varname, property(attr_get, attr_set))
+            else:
+                setattr(cls, varname, property(child_get, child_set))
+            return cls
+        return decorate(cls, self.attribute, self.varname, self.child, self.values)
 
 
 class Composition(object):
-	def __init__(self, cls, name):
-		self.cls = cls
-		self.name = name if name is not None else attribute.lower()
+    def __init__(self, cls, name):
+        self.cls = cls
+        self.name = name if name is not None else attribute.lower()
     
-	def __call__(self, cls):
-		def decorate(cls, comp_cls, name):
-			def create(self, *args, **kwargs):
-				child = comp_cls(*args, **kwargs)
-				self.append(child)
-				return child
-			setattr(cls, 'create_' + name, create)
-			return cls
-		return decorate(cls, self.cls, self.name)
+    def __call__(self, cls):
+        def decorate(cls, comp_cls, name):
+            def create(self, *args, **kwargs):
+                child = comp_cls(*args, **kwargs)
+                self.append(child)
+                return child
+            setattr(cls, 'create_' + name, create)
+            return cls
+        return decorate(cls, self.cls, self.name)
 
 
 @Attribute('Label')
 class Group(SubElement):
-	def __init__(self, tag='Group', label=None):
-		super(Group, self).__init__(tag)
-		self.label = label	
+    def __init__(self, tag='Group', label=None):
+        super(Group, self).__init__(tag)
+        self.label = label    
 
 
-@Attribute('Keyword', child=True)
+@Attribute('AppContainerApplication', child=True)
+@Attribute('ApplicationType', child=True)
+@Attribute('ApplicationTypeRevision', child=True)
 @Attribute('CustomBuildAfterTargets', child=True)
 @Attribute('CustomBuildBeforeTargets', child=True)
+@Attribute('DefaultLanguage', child=True)
+@Attribute('EnableDotNetNativeCompatibleProfile', child=True)
 @Attribute('Keyword', child=True)
+@Attribute('MinimumVisualStudioVersion', child=True)
+@Attribute('Platform', child=True)
 @Attribute('ProjectGUID', child=True)
 @Attribute('ProjectName', child=True)
-@Attribute('Platform', child=True)
+@Attribute('RootNamespace', child=True)
+@Attribute('WindowsTargetPlatformMinVersion', child=True)
+@Attribute('WindowsTargetPlatformVersion', child=True)
 class PropertyGroup(Group):
-	def __init__(self, label=None):
-		super(PropertyGroup, self).__init__('PropertyGroup', label)
+    def __init__(self, label=None):
+        super(PropertyGroup, self).__init__('PropertyGroup', label)
 
 
 class ItemGroup(Group):
-	def __init__(self, label=None):
-		super(ItemGroup, self).__init__('ItemGroup', label)
-	
+    def __init__(self, label=None):
+        super(ItemGroup, self).__init__('ItemGroup', label)
+    
 
 @Attribute('Condition')
 class ItemDefinitionGroup(Group):
-	def __init__(self, label=None):
-		super(ItemDefinitionGroup, self).__init__('ItemDefinitionGroup', label)
+    def __init__(self, label=None):
+        super(ItemDefinitionGroup, self).__init__('ItemDefinitionGroup', label)
 
 
 @Attribute('Include')
 @Attribute('Configuration', child=True)
 @Attribute('Platform', child=True)
 class ProjectConfiguration(SubElement):
-	def __init__(self, config, platform):
-		super(ProjectConfiguration, self).__init__('ProjectConfiguration')
-		self.configuration = config
-		self.platform = platform
-		self.include = "{}|{}".format(self.configuration, self.platform)
-		
-	@property
-	def condition(self):
-		return '\'$(Configuration)|$(Platform)\' == \'{}\''.format(self.include)
+    def __init__(self, config, platform):
+        super(ProjectConfiguration, self).__init__('ProjectConfiguration')
+        self.configuration = config
+        self.platform = platform
+        self.include = "{}|{}".format(self.configuration, self.platform)
+        
+    @property
+    def condition(self):
+        return '\'$(Configuration)|$(Platform)\' == \'{}\''.format(self.include)
 
 
 @Composition(ProjectConfiguration, 'projectconfiguration')
 class ProjectConfigurationsItemGroup(ItemGroup):
-	def __init__(self):
-		super(ProjectConfigurationsItemGroup, self).__init__('ProjectConfigurations')
+    def __init__(self):
+        super(ProjectConfigurationsItemGroup, self).__init__('ProjectConfigurations')
 
 
 @Attribute('Condition')
 @Attribute('ConfigurationType', varname='type', child=True, values=['Application', 'SharedLibrary', 'StaticLibrary'])
 @Attribute('PlatformToolset', varname='toolset', child=True, values=['v110', 'v120', 'v110_xp', 'v120_xp', 'v140', 'v140_xp'])
-@Attribute('CharacterSet', varname='charset', child=True, values=['MultiByte'])
+@Attribute('CharacterSet', varname='charset', child=True, values=['MultiByte', None])
 class ConfigurationPropertyGroup(PropertyGroup):
-	def __init__(self, project_config):
-		super(ConfigurationPropertyGroup, self).__init__('Configuration')
-		self.condition = project_config.condition
-	
+    def __init__(self, project_config):
+        super(ConfigurationPropertyGroup, self).__init__('Configuration')
+        self.condition = project_config.condition
+    
 
 @Attribute('Project')
 class Import(SubElement):
-	def __init__(self, project):
-		super(Import, self).__init__('Import')
-		self.project = project
+    def __init__(self, project):
+        super(Import, self).__init__('Import')
+        self.project = project
 
 
 @Composition(Import, 'import')
 class ImportGroup(SubElement):
-	def __init__(self):
-		super(ImportGroup, self).__init__('ImportGroup')
+    def __init__(self):
+        super(ImportGroup, self).__init__('ImportGroup')
 
 
 @Attribute('AdditionalIncludeDirectories', child=True)
@@ -170,6 +181,7 @@ class ImportGroup(SubElement):
 @Attribute('CallingConvention', values=['Cdecl', 'FastCall', 'StdCall'], child=True)
 @Attribute('CompileAs', values=['Default', 'CompileAsC', 'CompileAsCpp'], child=True)
 @Attribute('CompileAsManaged', values=['false', 'true', 'Pure', 'Safe', 'OldSyntax'], child=True)
+@Attribute('CompileAsWinRT', values=['false', 'true'], child=True)
 @Attribute('CreateHotpatchableImage', values=['false', 'true'], child=True)
 @Attribute('DebugInformationFormat', values=['OldStyle', 'ProgramDatabase', 'EditAndContinue'], child=True)
 @Attribute('DisableLanguageExtensions', values=['false', 'true'], child=True)
@@ -234,9 +246,9 @@ class ImportGroup(SubElement):
 @Attribute('TrackFileAccess', values=['false', 'true'], child=True)
 @Attribute('Include')
 class ClCompile(SubElement):
-	def __init__(self, include=None):
-		super(ClCompile, self).__init__('ClCompile')
-		self.include = include
+    def __init__(self, include=None):
+        super(ClCompile, self).__init__('ClCompile')
+        self.include = include
 
 
 @Attribute('AdditionalDependencies', child=True)
@@ -264,9 +276,9 @@ class ClCompile(SubElement):
 @Attribute('UseUnicodeResponseFiles', values=['false', 'true'], child=True)
 @Attribute('Verbose', values=['false', 'true'], child=True)
 class Lib(SubElement):
-	def __init__(self, include=None):
-		super(Lib, self).__init__('Lib')
-		self.include = include
+    def __init__(self, include=None):
+        super(Lib, self).__init__('Lib')
+        self.include = include
 
 
 @Attribute('AdditionalDependencies', child=True)
@@ -364,9 +376,9 @@ class Lib(SubElement):
 @Attribute('UseLibraryDependencyInputs', values=['false', 'true'], child=True)
 @Attribute('Version', child=True)
 class Link(SubElement):
-	def __init__(self, include=None):
-		super(Link, self).__init__('Link')
-		self.include = include
+    def __init__(self, include=None):
+        super(Link, self).__init__('Link')
+        self.include = include
 
 
 @Attribute('HintPath', child=True)
@@ -377,8 +389,8 @@ class Link(SubElement):
 @Attribute('Private', values=['false', 'true'], child=True)
 @Attribute('Include')
 class Reference(SubElement):
-	def __init__(self):
-		super(Reference, self).__init__('Reference')
+    def __init__(self):
+        super(Reference, self).__init__('Reference')
 
 
 @Attribute('Name', child=True)
@@ -389,31 +401,31 @@ class Reference(SubElement):
 @Attribute('WrapperTool', child=True)
 @Attribute('Include')
 class COMReference(SubElement):
-	def __init__(self):
-		super(COMReference, self).__init__('COMReference')
+    def __init__(self):
+        super(COMReference, self).__init__('COMReference')
 
 
 @Attribute('WrapperTool', child=True)
 @Attribute('Include')
 class COMFileReference(SubElement):
-	def __init__(self):
-		super(COMFileReference, self).__init__('COMFileReference')
+    def __init__(self):
+        super(COMFileReference, self).__init__('COMFileReference')
 
 
 @Attribute('HintPath', child=True)
 @Attribute('Name', child=True)
 @Attribute('Include')
 class NativeReference(SubElement):
-	def __init__(self):
-		super(NativeReference, self).__init__('NativeReference')
+    def __init__(self):
+        super(NativeReference, self).__init__('NativeReference')
 
 
 @Attribute('Name', child=True)
 @Attribute('Project', child=True)
 @Attribute('Package', child=True)
 class ProjectReference(SubElement):
-	def __init__(self):
-		super(ProjectReference, self).__init__('ProjectReference')
+    def __init__(self):
+        super(ProjectReference, self).__init__('ProjectReference')
 
 
 @Attribute('DependentUpon', child=True)
@@ -427,8 +439,8 @@ class ProjectReference(SubElement):
 @Attribute('CopyToOutputDirectory', values=['Never', 'Always', 'PreserveNewest'], child=True)
 @Attribute('Include')
 class Content(SubElement):
-	def __init__(self):
-		super(Content, self).__init__('Content')
+    def __init__(self):
+        super(Content, self).__init__('Content')
 
 
 @Attribute('DependentUpon', child=True)
@@ -442,8 +454,8 @@ class Content(SubElement):
 @Attribute('CopyToOutputDirectory', values=['Never', 'Always', 'PreserveNewest'], child=True)
 @Attribute('Include')
 class NoneTask(SubElement):
-	def __init__(self):
-		super(NoneTask, self).__init__('NoneTask')
+    def __init__(self):
+        super(NoneTask, self).__init__('NoneTask')
 
 
 @Attribute('Command', child=True)
@@ -451,42 +463,42 @@ class NoneTask(SubElement):
 @Attribute('Outputs', child=True)
 @Attribute('Include')
 class CustomBuild(SubElement):
-	def __init__(self, include=None):
-		super(CustomBuild, self).__init__('CustomBuild')
-		self.include = include
+    def __init__(self, include=None):
+        super(CustomBuild, self).__init__('CustomBuild')
+        self.include = include
 
 
 @Attribute('Command', child=True)
 @Attribute('Inputs', child=True)
 @Attribute('Outputs', child=True)
 class CustomBuildStep(SubElement):
-	def __init__(self):
-		super(CustomBuildStep, self).__init__('CustomBuildStep')
+    def __init__(self):
+        super(CustomBuildStep, self).__init__('CustomBuildStep')
 
 
 @Attribute('DefaultTargets', varname='default_target')
 @Attribute('ToolsVersion', varname='tools_version')
 @Attribute('xmlns')
 class Project(ElementTree):
-	def __init__(self):
-		super(Project, self).__init__(element=Element('Project'))
-		self.default_target = "Build"
-		self.tools_version = "12.0"
-		self.xmlns = "http://schemas.microsoft.com/developer/msbuild/2003"
-		
-	def append(self, element):
-		self.getroot().append(element)
+    def __init__(self):
+        super(Project, self).__init__(element=Element('Project'))
+        self.default_target = "Build"
+        self.tools_version = "12.0"
+        self.xmlns = "http://schemas.microsoft.com/developer/msbuild/2003"
+        
+    def append(self, element):
+        self.getroot().append(element)
 
-	def get(self, key):
-		self.getroot().get(key)
-		
-	def set(self, key, value):
-		self.getroot().set(key, value)
+    def get(self, key):
+        self.getroot().get(key)
+        
+    def set(self, key, value):
+        self.getroot().set(key, value)
 
-	def write(self, filename):
-		with open(filename, 'w') as f:
-			data = minidom.parseString(ET.tostring(self.getroot())).toprettyxml(indent="  ")
-			f.write(data)
+    def write(self, filename):
+        with open(filename, 'w') as f:
+            data = minidom.parseString(ET.tostring(self.getroot())).toprettyxml(indent="  ")
+            f.write(data)
 
 
 @Attribute('IntDir', child=True)
@@ -498,8 +510,8 @@ class Project(ElementTree):
 @Attribute('TargetExt', child=True)
 @Attribute('TargetPath', child=True)
 class CXXPropertyGroup(PropertyGroup):
-	def __init__(self):
-		super(CXXPropertyGroup, self).__init__()
+    def __init__(self):
+        super(CXXPropertyGroup, self).__init__()
 
 
 @Composition(ClCompile, 'clcompile')
@@ -511,18 +523,18 @@ class CXXPropertyGroup(PropertyGroup):
 @Composition(Content, 'content')
 @Composition(NoneTask, 'none')
 class CXXItemGroup(ItemGroup):
-	def __init__(self):
-		super(CXXItemGroup, self).__init__()
+    def __init__(self):
+        super(CXXItemGroup, self).__init__()
 
 
 @Composition(ClCompile, 'clcompile')
 @Composition(CustomBuildStep, 'custombuildstep')
 @Composition(Lib, 'lib')
-@Composition(Link, 'link')		
+@Composition(Link, 'link')        
 class CXXItemDefinitionGroup(ItemDefinitionGroup):
-	def __init__(self, label=None):
-		super(CXXItemDefinitionGroup, self).__init__(label)
-		
+    def __init__(self, label=None):
+        super(CXXItemDefinitionGroup, self).__init__(label)
+        
 
 @Composition(CXXItemGroup, 'itemgroup')
 @Composition(CXXItemDefinitionGroup, 'itemdefinitiongroup')
@@ -530,116 +542,133 @@ class CXXItemDefinitionGroup(ItemDefinitionGroup):
 @Composition(Import, 'import')
 @Composition(ImportGroup, 'importgroup')
 class CXXProject(Project):
-	def __init__(self, config, machine):
-		super(CXXProject, self).__init__()
-		self.configs_group = ProjectConfigurationsItemGroup()
-		self.globals_group = PropertyGroup('Globals')	
-		self.macros_group = PropertyGroup('UserMacros')	
-		self.config = self.create_projectconfiguration(config, machine)
-		self.config_props = self.create_configuration_property_group(self.config)		
+    def __init__(self, toolchain):
+        super(CXXProject, self).__init__()
+        self.configs_group = ProjectConfigurationsItemGroup()
+        self.globals_group = deepcopy(toolchain.globals)    
+        self.macros_group = PropertyGroup('UserMacros')    
+        self.config = self.create_projectconfiguration(toolchain.config, toolchain.platform)
+        self.config_props = self.create_configuration_property_group(self.config)        
 
-		self.append(self.configs_group)
-		self.append(self.globals_group)
-		self.append(Import('$(VCTargetsPath)\Microsoft.Cpp.Default.props'))
-		self.append(Import('$(VCTargetsPath)\Microsoft.Cpp.props'))
-		self.append(self.macros_group)
-		
-		self.definitions_group = self.create_itemdefinitiongroup()		
-		self.properties_group = self.create_propertygroup()
-		self.items_group = self.create_itemgroup()
+        self.append(self.configs_group)
+        self.append(self.globals_group)
+        self.append(Import('$(VCTargetsPath)\Microsoft.Cpp.Default.props'))
+        self.append(Import('$(VCTargetsPath)\Microsoft.Cpp.props'))
+        self.append(self.macros_group)
+        
+        self.definitions_group = self.create_itemdefinitiongroup()        
+        self.properties_group = self.create_propertygroup()
+        self.items_group = self.create_itemgroup()
 
-		self.append(Import('$(VCTargetsPath)\Microsoft.Cpp.targets'))
-		
-		self.clcompile = self.definitions_group.create_clcompile()
-		self.lib = self.definitions_group.create_lib()
-		self.link = self.definitions_group.create_link()
-			
-	def create_projectconfiguration(self, config_name, platform):
-		return self.configs_group.create_projectconfiguration(config_name, platform)
-		
-	def create_configuration_property_group(self, project_config):
-		cpg = ConfigurationPropertyGroup(project_config)
-		self.getroot().insert(5, cpg)
-		return cpg
+        self.append(Import('$(VCTargetsPath)\Microsoft.Cpp.targets'))
+        
+        self.clcompile = deepcopy(toolchain.clcompile)
+        self.definitions_group.append(self.clcompile)
+        
+        self.lib = self.definitions_group.create_lib()
+        self.link = self.definitions_group.create_link()
+            
+    def create_projectconfiguration(self, config_name, platform):
+        return self.configs_group.create_projectconfiguration(config_name, platform)
+        
+    def create_configuration_property_group(self, project_config):
+        cpg = ConfigurationPropertyGroup(project_config)
+        self.getroot().insert(5, cpg)
+        return cpg
 
 
 class ClCompileDriver(object):
-	def __init__(self, cxx=True):
-		self.cxx = cxx
-	
-	def prepare(self, cxx_project, path):
-		cl = cxx_project.items_group.create_clcompile(path)
-		if not self.cxx:
-			cl.compileas = "CompileAsC"
+    def __init__(self, cxx=True):
+        self.cxx = cxx
+    
+    def transform(self, cxx_project, source):
+        cl = cxx_project.items_group.create_clcompile(source.path)
+        if not self.cxx:
+            cl.compileas = "CompileAsC"
+            cl.compileaswinrt = "false"
 
 
-class MSBuildCXXToolchain(Toolchain):
-	def __init__(self, config, machine, toolset, name):
-		super(MSBuildCXXToolchain, self).__init__(name)
-		self.config = config
-		self.machine = machine
-		self.toolset = toolset
-		self.charset = 'MultiByte'
-		self.add_tool('.c', ClCompileDriver(cxx=False))
-		self.add_tool('.cc', ClCompileDriver())
-		self.add_tool('.cpp', ClCompileDriver())
+class CXXToolchain(Toolchain):
+    def __init__(self, name, vcvars=VS14VCVars(target="x64", host="x64")):
+        super(CXXToolchain, self).__init__(name)
+        self.vcvars = vcvars
+        self.config = 'Default'
+        self.platform = 'x64'
+        self.toolset = 'v140'
+        self.charset = None
+        self.subsystem = 'Console'
+        self.globals = PropertyGroup('Globals')
+        self.clcompile = ClCompile()
+        self.add_tool('.c', ClCompileDriver(cxx=False))
+        self.add_tool('.cc', ClCompileDriver())
+        self.add_tool('.cpp', ClCompileDriver())
+        self.output = "output/{}".format(name)
 
-	def add_tool(self, extension, driver):
-		self._tools[extension] = driver
+    def add_tool(self, extension, driver):
+        self._tools[extension] = driver
 
-	def get_tool(self, extension):
-		if extension not in self._tools:
-			raise RuntimeError('could not find tool for {} extension'.format(extension))
-		return self._tools[extension]
-		
-	def transform(self, project):
-		cxx_project = CXXProject(self.config, self.machine)
-		
-		cxx_project.globals_group.projectname = project.name
-		cxx_project.globals_group.projectguid = '{%s}' % project.uuid
-		cxx_project.globals_group.platform = self.machine
+    def get_tool(self, extension):
+        if extension not in self._tools:
+            raise RuntimeError('could not find tool for {} extension'.format(extension))
+        return self._tools[extension]
 
-		def key_value(key, value):
-			return key if value is None else "{}={}".format(key, value)
-		
-		definitions = [key_value(macro.key, macro.value) for macro in project.macros if macro.matches(self.name)]
-		incpaths = [incpath.path for incpath in project.incpaths if incpath.matches(self.name)]
-		libpaths = [libpath.path for libpath in project.libpaths if libpath.matches(self.name)]
+    def transform(self, project):
+        cxx_project = CXXProject(self)
+        cxx_project.tools_version = self.vcvars['VisualStudioVersion']
 
-		cxx_project.clcompile.additionalincludedirectories = ';'.join(incpaths)
-		cxx_project.clcompile.preprocessordefinitions = ';'.join(definitions)
-		cxx_project.clcompile.trackerlogdirectory = "$(IntDir)"
+        cxx_project.globals_group.projectname = project.name
+        cxx_project.globals_group.projectguid = '{%s}' % project.uuid
+        cxx_project.globals_group.platform = self.platform
 
-		if isinstance(project, projects.CXXLibrary):
-			cxx_project.config_props.type = 'StaticLibrary'
-			cxx_project.lib.subsystem = "Console"
+        def key_value(key, value):
+            return key if value is None else "{}={}".format(key, value)
 
-		if isinstance(project, projects.CXXExecutable):
-			cxx_project.config_props.type = 'Application'
-			libraries = [dep.name for dep in project.dependencies if isinstance(dep, projects.CXXLibrary)]
-			libraries = ['{}.lib'.format(lib) for lib in libraries]
-			cxx_project.link.additionaldependencies = ';'.join(libraries)
-			cxx_project.link.additionallibrarydirectories = ';'.join(libpaths)
-			cxx_project.link.subsystem = "Console"
+        macros = [key_value(macro.key, macro.value) for macro in project.macros if macro.matches(self.name)]
+        incpaths = [incpath.path for incpath in project.incpaths if incpath.matches(self.name)]
+        libpaths = [libpath.path for libpath in project.libpaths if libpath.matches(self.name)]
 
-		cxx_project.config_props.toolset = self.toolset
-		cxx_project.config_props.charset = self.charset
-		cxx_project.properties_group.intdir = "output/{}/".format(project.name)
-		cxx_project.properties_group.outdir = "output/{}/".format(project.name)
-		cxx_project.properties_group.targetpath = "$(OutDir)$(TargetName)$(TargetExt)"
+        if isinstance(project, model.CXXLibrary):
+            cxx_project.config_props.type = 'StaticLibrary'
+            cxx_project.lib.subsystem = self.subsystem
 
-		groups = project.source_groups + [project]
-		for group in groups:
-			for source in group.sources:
-				root, ext = os.path.splitext(source.path)
-				tool = self.get_tool(ext)
-				if tool is None:
-					raise RuntimeError()
-				tool.prepare(cxx_project, source.path)
-		cxx_project.write('{}.vcxproj'.format(project.name))
-		
-		msbuild = r'"C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe"'
-		rc, _ = utils.execute('{} {}.vcxproj /nologo /p:Configuration={} /p:Platform={}'.format(
-			msbuild, project.name, self.config, self.machine), VS2015Environment())
-		if rc != 0:
-			raise RuntimeError()
+        if isinstance(project, model.CXXExecutable):
+            cxx_project.config_props.type = 'Application'
+            macros += [key_value(macro.key, macro.value) for dep in project.dependencies for macro in dep.macros if macro.publish]
+            incpaths += [incpath.path for dep in project.dependencies for incpath in dep.incpaths if incpath.publish]
+            libpaths += [libpath.path for dep in project.dependencies for libpath in dep.libpaths if libpath.publish]
+            libraries = [dep.name for dep in project.dependencies if isinstance(dep, model.CXXLibrary)]
+            libraries = ['{output}/{lib}/{lib}.lib'.format(output=self.output, lib=lib) for lib in libraries]
+            cxx_project.link.additionaldependencies = ';'.join(libraries)
+            cxx_project.link.additionallibrarydirectories = ';'.join(libpaths)
+            cxx_project.link.subsystem = self.subsystem
+
+        cxx_project.clcompile.additionalincludedirectories = ';'.join(incpaths)
+        cxx_project.clcompile.preprocessordefinitions = ';'.join(macros)
+        cxx_project.clcompile.trackerlogdirectory = "$(IntDir)"
+
+        cxx_project.config_props.toolset = self.toolset
+        cxx_project.config_props.charset = self.charset
+        cxx_project.properties_group.intdir = "{}/{}/".format(self.output, project.name)
+        cxx_project.properties_group.outdir = "{}/{}/".format(self.output, project.name)
+        cxx_project.properties_group.targetpath = "$(OutDir)$(TargetName)$(TargetExt)"
+
+        groups = project.source_groups + [project]
+        for group in groups:
+            for source in group.sources:
+                print(source.path)
+                tool = self.get_tool(source.tool)
+                if tool is None:
+                    raise RuntimeError()
+                tool.transform(cxx_project, source)
+
+        for feature in project.features:
+            if feature.matches(self.name):
+                feature = FeatureRegistry.find(feature.name)
+                feature.transform(project, cxx_project)
+
+        cxx_project.write('{}.vcxproj'.format(project.name))
+        
+        rc, _ = utils.execute('MSBuild.exe {}.vcxproj /m /nologo /p:Configuration={} /p:Platform={}'.format(
+            project.name, self.config, self.platform), self.vcvars)
+        if rc != 0:
+            raise RuntimeError()

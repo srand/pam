@@ -1,0 +1,4 @@
+*.pyc
+*.obj
+*.o
+*.vcxproj

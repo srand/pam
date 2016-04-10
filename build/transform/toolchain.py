@@ -1,9 +1,42 @@
-import tempfile
+import sys
 import os
 import re
-import subprocess
-from copy import copy
+import platform
+from build.utils import Loader
 
+
+class ToolchainRegistry(object):
+    _toolchains = {}
+    
+    @staticmethod
+    def add(toolchain):
+        ToolchainRegistry._toolchains[toolchain.name] = toolchain
+        
+    @staticmethod
+    def find(toolchain):
+        if toolchain not in ToolchainRegistry._toolchains:
+            raise ValueError(toolchain) 
+        return ToolchainRegistry._toolchains[toolchain]
+        
+    @staticmethod
+    def names():
+        return ToolchainRegistry._toolchains.keys()
+        
+    @staticmethod
+    def all():
+        return ToolchainRegistry._toolchains.values()
+
+    @staticmethod
+    def this_system():
+        return [tc for tc in ToolchainRegistry._toolchains.values() if re.search(platform.system().lower(), tc.name)]
+
+
+
+
+
+class ToolchainLoader(Loader):
+    def __init__(self, path):
+        super(ToolchainLoader, self).__init__("build.toolchains", path)
 
 
 class Toolchain(object):
@@ -11,6 +44,7 @@ class Toolchain(object):
         super(Toolchain, self).__init__()
         self._tools = {}
         self.name = name
+        ToolchainRegistry.add(self)
 
     def transform(self, project):
         pass
@@ -63,33 +97,6 @@ def ios_armv7_libcxx_settings():
     toolchain.settings.add_cxxflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
     toolchain.settings.add_linkflag('-isysroot')
     toolchain.settings.add_linkflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
-    return Settings(toolchain.settings)
-
-
-def win_x86_vs2015xp_settings():
-    def create_env():
-        env = copy(os.environ)
-        
-        installdir = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0'
-        if not os.path.exists(installdir):
-            raise RuntimeError('VS2015 is not installed')
-        
-        common7ide = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE'
-        vcbin = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\BIN'
-        common7tools = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools'
-        include = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE;C:\Program Files (x86)\Windows Kits\10\\include\10.0.10056.0\ucrt;C:\Program Files (x86)\Windows Kits\8.1\include\shared;C:\Program Files (x86)\Windows Kits\8.1\include\um;C:\Program Files (x86)\Windows Kits\8.1\include\winrt;'
-        lib = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\LIB;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\LIB;C:\Program Files (x86)\Windows Kits\10\\lib\10.0.10056.0\ucrt\x86;C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86;'
-        libpath = r'C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\LIB;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\LIB;C:\Program Files (x86)\Windows Kits\8.1\References\CommonConfiguration\Neutral;\Microsoft.VCLibs\14.0\References\CommonConfiguration\neutral;'
-        
-        env['VSINSTALLDIR'] = installdir
-        env['PATH'] = '{};{};{};{}'.format(common7ide, vcbin, common7tools, env['PATH'])
-        env['VS140COMNTOOLS'] = common7tools
-        env['INCLUDE'] = include 
-        env['LIB'] = lib 
-        env['LIBPATH'] = libpath 
-        return env
-    
-    toolchain = MSVCCXXToolchain(create_env())
     return Settings(toolchain.settings)
 
 """

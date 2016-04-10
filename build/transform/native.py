@@ -1,8 +1,8 @@
-from toolchain import Toolchain
-import project as project_type
-import os
-import utils
+from build import  model
+from build.transform import utils
+from build.transform.toolchain import Toolchain
 from copy import copy
+from os import path
 
 
 class Settings(object):
@@ -139,8 +139,8 @@ class Command(Job):
         for dep in required_deps:
             dep.execute()
 
-        print self.info
-        print '\t', self.cmdline
+        #print self.info
+        #print '\t', self.cmdline
         rc, stdout = utils.execute(self._cmdline, self._env)
         if rc != 0: raise RuntimeError('job failed')
         self._completed = True
@@ -151,52 +151,78 @@ class Object(Command):
         super(Object, self).__init__(product, cmdline, info, env)
 
 
-class MSVCCompilerDriver(object):
+class MSVCDirectory(Command):
+    def __init__(self, product):
+        cmdline = "cmd /c if not exist \"{dir}\" mkdir \"{dir}\"".format(dir=product)
+        super(MSVCDirectory, self).__init__(product, cmdline)
+
+
+class MSVCDriver(object):
+    def _directory(self, cxx_project, object_file):
+        dirname = path.dirname(object_file)
+        job = cxx_project.get_job(dirname)
+        if not job:
+            job = MSVCDirectory(dirname)
+            cxx_project.add_job(job)
+        return job     
+
+
+class MSVCCompilerDriver(MSVCDriver):
     def __init__(self, cxx=False, env=None):
         self._executable = "cl.exe"
         self._output_ext = ".obj"
         self._cxx = cxx
         self._env = env
         
-    def _product(self, source_file):
-        return '{}{}'.format(source_file, self._output_ext)
+    def _product(self, cxx_project, source_file):
+        return '{output}{}{}'.format(source_file, self._output_ext, output=cxx_project.output)
         
-    def _cmdline(self, settings, source_file):
+    def _cmdline(self, cxx_project, source_file):
         def key_value(key, value):
             return "{}".format(key) if value is None else "{}={}".format(key, value)
 		
-        definitions = ['/D{}'.format(key_value(key, value)) for key, value in settings.macros ]
-        incpaths = ['/I{}'.format(path) for path in settings.incpaths]
-        flags = settings.cflags if not self._cxx else settings.cxxflags
+        definitions = ['/D{}'.format(key_value(key, value)) for key, value in cxx_project.macros ]
+        incpaths = ['/I{}'.format(path) for path in cxx_project.incpaths]
+        flags = cxx_project.cflags if not self._cxx else cxx_project.cxxflags
 
-        return "{} /nologo {} {} {} /c {} /Fo{}".format(
+        return "{} /nologo {} {} {} /c /T{}{} /Fo{}".format(
             self._executable, 
             ' '.join(flags),
             ' '.join(definitions),
             ' '.join(incpaths),
+            'p' if self._cxx else 'c',
             source_file, 
-            self._product(source_file))
+            self._product(cxx_project, source_file))
 
     def _info(self, source_file):
         return ' [{}] {}'.format(self._executable.upper(), source_file)
 
-    def prepare(self, settings, source_file):
-        return Object(self._product(source_file), self._cmdline(settings, source_file), self._info(source_file), env=self._env)
+    def transform(self, cxx_project, source_file):
+        product = self._product(cxx_project, source_file.path)
+        dir = self._directory(cxx_project, product)
+        obj =  Object(product, 
+                      self._cmdline(cxx_project, source_file.path), 
+                      self._info(source_file.path),
+                      self._env)
+        cxx_project.add_job(Source(source_file.path))
+        cxx_project.add_job(obj)
+        cxx_project.add_dependency(obj.product, source_file.path)
+        cxx_project.add_dependency(obj.product, dir.product)
 
 
-class MSVCLinkerDriver(object):
+class MSVCLinkerDriver(MSVCDriver):
     def __init__(self, env=None):
         self._executable = 'link.exe'
         self._output_ext = '.exe'
         self._env = env
 
-    def _product(self, executable):
-        return '{}{}'.format(executable, self._output_ext)
+    def _product(self, cxx_project):
+        return '{output}{}{}'.format(cxx_project.name, self._output_ext, output=cxx_project.output)
 
-    def _cmdline(self, settings, executable, object_files):
-        libpaths = ['/libpath:{}'.format(path) for path in settings.libpaths]
-        libraries = ['{}.lib'.format(path) for path in settings.libraries]
-        flags = settings.linkflags
+    def _cmdline(self, cxx_project, object_files):
+        libpaths = ['/libpath:{}'.format(path) for path in cxx_project.libpaths]
+        libraries = ['{output}/{lib}/{lib}.lib'.format(output=cxx_project.toolchain.output, lib=lib) for lib in cxx_project.libraries]
+        flags = cxx_project.linkflags
 
         return "{} /nologo {} {} {} {} /out:{}".format(
             self._executable, 
@@ -204,33 +230,54 @@ class MSVCLinkerDriver(object):
             ' '.join(libraries),
             ' '.join(flags),
             ' '.join(object_files),
-            self._product(executable))
+            self._product(cxx_project))
 
-    def _info(self, executable):
-        return ' [{}] {}'.format(self._executable.upper(), executable)
+    def _info(self, cxx_project):
+        return ' [{}] {}'.format(self._executable.upper(), cxx_project.name)
 
-    def prepare(self, settings, executable, object_files):
-        return Object(self._product(executable), self._cmdline(settings, executable, object_files), self._info(executable), env=self._env)
+    def transform(self, cxx_project, object_files):
+        product = self._product(cxx_project)
+        dir = self._directory(cxx_project, product)
+        executable = Object(product, 
+                            self._cmdline(cxx_project, object_files), 
+                            self._info(cxx_project),
+                            self._env)
+        cxx_project.add_job(executable)                            
+        cxx_project.add_dependency(executable.product, dir.product)
+        for obj in object_files:
+            cxx_project.add_dependency(executable.product, obj)
 
 
-class MSVCArchiverDriver(object):
+class MSVCArchiverDriver(MSVCDriver):
     def __init__(self, env=None):
         self._executable = 'lib.exe'
         self._output_pfx = ''
         self._output_ext = '.lib'
         self._env = env
 
-    def _product(self, name):
-        return '{}{}{}'.format(self._output_pfx, name, self._output_ext)
+    def _product(self, cxx_project):
+        return '{output}{}{}{}'.format(self._output_pfx, cxx_project.name, self._output_ext, output=cxx_project.output)
 
-    def _cmdline(self, name, object_files):
-        return "{} /nologo /out:{} {}".format(self._executable, self._product(name), ' '.join(object_files))
+    def _cmdline(self, cxx_project, object_files):
+        return "{} /nologo /out:{} {}".format(
+            self._executable,
+            self._product(cxx_project), 
+            ' '.join(object_files))
 
-    def _info(self, name):
-        return ' [{}] {}'.format(self._executable.upper(), name)
+    def _info(self, cxx_project):
+        return ' [{}] {}'.format(self._executable.upper(), cxx_project.name)
 
-    def prepare(self, settings, name, object_files):
-        return Object(self._product(name), self._cmdline(name, object_files), self._info(name), env=self._env)
+    def transform(self, cxx_project, object_files):
+        product = self._product(cxx_project)
+        dir = self._directory(cxx_project, product)
+        library = Object(product, 
+                         self._cmdline(cxx_project, object_files), 
+                         self._info(cxx_project),
+                         self._env)
+        cxx_project.add_job(library)
+        cxx_project.add_dependency(library.product, dir.product)
+        for obj in object_files:
+            cxx_project.add_dependency(library.product, obj)
 
 
 class GNUCompilerDriver(object):
@@ -261,8 +308,13 @@ class GNUCompilerDriver(object):
     def _info(self, source_file):
         return ' [{}] {}'.format(self._executable.upper(), source_file)
 
-    def prepare(self, settings, source_file):
-        return Object(self._product(source_file), self._cmdline(settings, source_file), self._info(source_file))
+    def transform(self, cxx_project, source_file):
+        obj =  Object(self._product(source_file.path), 
+                      self._cmdline(cxx_project, source_file.path), 
+                      self._info(source_file.path))
+        cxx_project.add_job(Source(source_file.path))
+        cxx_project.add_job(obj)
+        cxx_project.add_dependency(obj.product, source_file.path)
 
 
 class GNULinkerDriver(object):
@@ -290,8 +342,13 @@ class GNULinkerDriver(object):
     def _info(self, executable):
         return ' [{}] {}'.format(self._executable.upper(), executable)
 
-    def prepare(self, settings, executable, object_files):
-        return Object(self._product(executable), self._cmdline(settings, executable, object_files), self._info(executable))
+    def transform(self, cxx_project, object_files):
+        executable = Object(self._product(cxx_project.name), 
+                            self._cmdline(cxx_project, executable, object_files), 
+                            self._info(cxx_project.name))
+        cxx_project.add_job(executable)
+        for obj in object_files:
+            cxx_project.add_dependency(executable.product, obj)
 
 
 class GNUArchiverDriver(object):
@@ -309,8 +366,13 @@ class GNUArchiverDriver(object):
     def _info(self, name):
         return ' [{}] {}'.format(self._executable.upper(), name)
 
-    def prepare(self, settings, name, object_files):
-        return Object(self._product(name), self._cmdline(name, object_files), self._info(name))
+    def transform(self, cxx_project, object_files):
+        library = Object(self._product(cxx_project.name), 
+                         self._cmdline(cxx_project.name, object_files), 
+                         self._info(cxx_project.name))
+        cxx_project.add_job(library)
+        for obj in object_files:
+            cxx_project.add_dependency(library.product, obj)
 
 
 class CXXToolchain(Toolchain, Settings):
@@ -319,6 +381,7 @@ class CXXToolchain(Toolchain, Settings):
         self._tools = {}
         self._cxx_archiver = None
         self._cxx_linker = None
+        self.output = "output/{}".format(name)
 
     def add_tool(self, extension, driver):
         self._tools[extension] = driver
@@ -345,52 +408,56 @@ class CXXToolchain(Toolchain, Settings):
         self._cxx_linker = linker_driver
 
     def transform(self, project):
-        cxx_project = NativeCXXProject(self, project.name)
+        cxx_project = CXXProject(self, project.name)
         
-        for incpath in project.incpaths:
-            if incpath.matches(self.name):
-                cxx_project.add_incpath(incpath.path)
-        for libpath in project.libpaths:
-            if libpath.matches(self.name):
-                cxx_project.add_libpath(libpath.path)
-        for macro in project.macros:
-            if macro.matches(self.name):
-                cxx_project.add_macro(macro.key, macro.value)
+        macros = [macro for macro in project.macros if macro.matches(self.name)]
+        incpaths = [incpath for incpath in project.incpaths if incpath.matches(self.name)]
+        libpaths = [libpath for libpath in project.libpaths if libpath.matches(self.name)]
+
+        if isinstance(project, model.CXXExecutable):
+            macros += [macro for dep in project.dependencies for macro in dep.macros if macro.publish]
+            incpaths += [incpath for dep in project.dependencies for incpath in dep.incpaths if incpath.publish]
+            libpaths += [libpath for dep in project.dependencies for libpath in dep.libpaths if libpath.publish]
+
+        for macro in macros:
+            cxx_project.add_macro(macro.key, macro.value)    
+        for incpath in incpaths:
+            cxx_project.add_incpath(incpath.path)    
+        for libpath in libpaths:
+            cxx_project.add_libpath(libpath.path)    
+
         for dep in project.dependencies:
-            if isinstance(dep, project_type.CXXLibrary):
+            if isinstance(dep, model.CXXLibrary):
                 cxx_project.add_library(dep.name)            
 
-        for source in project.sources:
-            root, ext = os.path.splitext(source.path)
-            tool = self.get_tool(ext)
-            if tool is None:
-                raise RuntimeError()
-            cxx_project.add_job(tool.prepare(cxx_project, source.path))
+        groups = project.source_groups + [project]
+        for group in groups:
+            for source in group.sources:
+                tool = self.get_tool(source.tool)
+                if tool is None:
+                    raise RuntimeError()
+                tool.transform(cxx_project, source)
 
-        if isinstance(project, project_type.CXXLibrary):
+        if isinstance(project, model.CXXLibrary):
             objects = cxx_project.objects
             object_names = [obj.product for obj in objects]
-            library = self.archiver.prepare(cxx_project, cxx_project.name, object_names)
-            cxx_project.add_job(library)
-            for obj in objects:
-                cxx_project.add_dependency(library.product, obj.product)
+            self.archiver.transform(cxx_project, object_names)
 
-        if isinstance(project, project_type.CXXExecutable):
+        if isinstance(project, model.CXXExecutable):
             objects = cxx_project.objects
             object_names = [obj.product for obj in objects]
-            executable = self.linker.prepare(cxx_project, cxx_project.name, object_names)
-            cxx_project.add_job(executable)
-            for obj in objects:
-                cxx_project.add_dependency(executable.product, obj.product)
-                
+            self.linker.transform(cxx_project, object_names)
+                        
         cxx_project.transform()
         
 
-class NativeCXXProject(Settings):
-    def __init__(self, settings, name):
-        super(NativeCXXProject, self).__init__(settings)
+class CXXProject(Settings):
+    def __init__(self, toolchain, name):
+        super(CXXProject, self).__init__(toolchain)
         self._jobs = {}
         self.name = name
+        self.toolchain = toolchain
+        self.output = "{output}/{name}/".format(output=toolchain.output, name=name)
         
     @property
     def objects(self):
@@ -412,6 +479,9 @@ class NativeCXXProject(Settings):
         self._jobs[job.product] = job
         return job
 
+    def get_job(self, job):
+        return self._jobs.get(job) 
+       
     def add_dependency(self, product1, product2):
         if product1 not in self._jobs:
             raise RuntimeError('{} not known'.format(product1))
@@ -425,29 +495,6 @@ class NativeCXXProject(Settings):
             job = self._jobs[product]
             if job.required:
                 job.execute()
-
-
-def VS2015Environment():
-    env = copy(os.environ)
-
-    installdir = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0'
-    if not os.path.exists(installdir):
-        raise RuntimeError('VS2015 is not installed')
-        
-    common7ide = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE'
-    vcbin = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\BIN'
-    common7tools = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools'
-    include = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\INCLUDE;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\INCLUDE;C:\Program Files (x86)\Windows Kits\10\\include\10.0.10056.0\ucrt;C:\Program Files (x86)\Windows Kits\8.1\include\shared;C:\Program Files (x86)\Windows Kits\8.1\include\um;C:\Program Files (x86)\Windows Kits\8.1\include\winrt;'
-    lib = r'C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\LIB;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\LIB;C:\Program Files (x86)\Windows Kits\10\\lib\10.0.10056.0\ucrt\x86;C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86;'
-    libpath = r'C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\LIB;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\ATLMFC\LIB;C:\Program Files (x86)\Windows Kits\8.1\References\CommonConfiguration\Neutral;\Microsoft.VCLibs\14.0\References\CommonConfiguration\neutral;'
-        
-    env['VSINSTALLDIR'] = installdir
-    env['PATH'] = '{};{};{};{}'.format(common7ide, vcbin, common7tools, env['PATH'])
-    env['VS140COMNTOOLS'] = common7tools
-    env['INCLUDE'] = include 
-    env['LIB'] = lib 
-    env['LIBPATH'] = libpath 
-    return env    
 
 
 class MSVCCXXToolchain(CXXToolchain):

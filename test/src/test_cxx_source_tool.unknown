@@ -1,0 +1,5 @@
+
+int test_cxx_source_tool()
+{
+    return 0;
+}
