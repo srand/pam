@@ -577,17 +577,6 @@ class CXXProject(Project):
         return cpg
 
 
-class ClCompileDriver(object):
-    def __init__(self, cxx=True):
-        self.cxx = cxx
-    
-    def transform(self, cxx_project, source):
-        cl = cxx_project.items_group.create_clcompile(source.path)
-        if not self.cxx:
-            cl.compileas = "CompileAsC"
-            cl.compileaswinrt = "false"
-
-
 class CXXToolchain(Toolchain):
     def __init__(self, name, vcvars=VS14VCVars(target="x64", host="x64")):
         super(CXXToolchain, self).__init__(name)
@@ -599,9 +588,6 @@ class CXXToolchain(Toolchain):
         self.subsystem = 'Console'
         self.globals = PropertyGroup('Globals')
         self.clcompile = ClCompile()
-        self.add_tool('.c', ClCompileDriver(cxx=False))
-        self.add_tool('.cc', ClCompileDriver())
-        self.add_tool('.cpp', ClCompileDriver())
         self.output = "output/{}".format(name)
 
     def add_tool(self, extension, driver):
