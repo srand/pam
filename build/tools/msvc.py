@@ -16,6 +16,23 @@ class MSBuildCXXCompiler(Tool):
             cl.compileaswinrt = "false"
 
 
+class MSBuildShaderCompiler(Tool):
+    def transform(self, cxx_project, source):
+        fx = cxx_project.items_group.create_fxcompile(source.path)
+        fx.shadertype = source.args['shadertype'].title()
+        fx.shadermodel = source.args['shadermodel']
+        
+
+class MSBuildImage(Tool):
+    def transform(self, cxx_project, source):
+        img = cxx_project.items_group.create_image(source.path)
+
+
+class MSBuildAppxManifest(Tool):
+    def transform(self, cxx_project, source):
+        appx = cxx_project.items_group.create_appxmanifest(source.path)
+
+
 class PyBuildCXXCompiler(Tool):
     def __init__(self, cxx=False, env=None):
         self._executable = "cl.exe"

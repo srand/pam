@@ -251,6 +251,17 @@ class ClCompile(SubElement):
         self.include = include
 
 
+@Attribute('ShaderType', values=['Pixel', 'Vertex'], child=True)
+@Attribute('ShaderModel', child=True)
+@Attribute('DisableOptimizations', child=True)
+@Attribute('EnableDebuggingInformation', child=True)
+@Attribute('Include')
+class FxCompile(SubElement):
+    def __init__(self, include=None):
+        super(FxCompile, self).__init__('FxCompile')
+        self.include = include
+
+
 @Attribute('AdditionalDependencies', child=True)
 @Attribute('AdditionalLibraryDirectories', child=True)
 @Attribute('AdditionalOptions', child=True)
@@ -453,9 +464,32 @@ class Content(SubElement):
 @Attribute('Visible', values=['false', 'true'], child=True)
 @Attribute('CopyToOutputDirectory', values=['Never', 'Always', 'PreserveNewest'], child=True)
 @Attribute('Include')
+class Image(SubElement):
+    def __init__(self, include):
+        super(Image, self).__init__('Image')
+        self.include = include
+
+
+@Attribute('DependentUpon', child=True)
+@Attribute('Generator', child=True)
+@Attribute('LastGenOutput', child=True)
+@Attribute('CustomToolNamespace', child=True)
+@Attribute('Link', values=['false', 'true'], child=True)
+@Attribute('PublishState', values=['Default', 'Included', 'Excluded', 'DataFile', 'Prerequisite'], child=True)
+@Attribute('IsAssembly', values=['false', 'true'], child=True)
+@Attribute('Visible', values=['false', 'true'], child=True)
+@Attribute('CopyToOutputDirectory', values=['Never', 'Always', 'PreserveNewest'], child=True)
+@Attribute('Include')
 class NoneTask(SubElement):
     def __init__(self):
         super(NoneTask, self).__init__('NoneTask')
+
+
+@Attribute('Include')
+class AppxManifest(SubElement):
+    def __init__(self, include=None):
+        super(AppxManifest, self).__init__('AppxManifest')
+        self.include = include
 
 
 @Attribute('Command', child=True)
@@ -515,13 +549,16 @@ class CXXPropertyGroup(PropertyGroup):
 
 
 @Composition(ClCompile, 'clcompile')
+@Composition(FxCompile, 'fxcompile')
 @Composition(CustomBuild, 'custombuild')
 @Composition(Reference, 'reference')
 @Composition(COMReference, 'comreference')
 @Composition(COMFileReference, 'comfilereference')
 @Composition(ProjectReference, 'projectreference')
 @Composition(Content, 'content')
+@Composition(Image, 'image')
 @Composition(NoneTask, 'none')
+@Composition(AppxManifest, 'appxmanifest')
 class CXXItemGroup(ItemGroup):
     def __init__(self):
         super(CXXItemGroup, self).__init__()
@@ -622,8 +659,9 @@ class CXXToolchain(Toolchain):
             macros += [key_value(macro.key, macro.value) for dep in project.dependencies for macro in dep.macros if macro.publish]
             incpaths += [incpath.path for dep in project.dependencies for incpath in dep.incpaths if incpath.publish]
             libpaths += [libpath.path for dep in project.dependencies for libpath in dep.libpaths if libpath.publish]
-            libraries = [dep.name for dep in project.dependencies if isinstance(dep, model.CXXLibrary)]
-            libraries = ['{output}/{lib}/{lib}.lib'.format(output=self.output, lib=lib) for lib in libraries]
+            _libraries = [dep.name for dep in project.dependencies if isinstance(dep, model.CXXLibrary)]
+            libraries  = ['{output}/{lib}/{lib}.lib'.format(output=self.output, lib=lib) for lib in _libraries]
+            libraries += ['d2d1.lib', 'd3d11.lib', 'dxgi.lib', 'windowscodecs.lib; dwrite.lib; dxguid.lib;xaudio2.lib;xinput.lib;mfcore.lib; mfplat.lib; mfreadwrite.lib; mfuuid.lib; %(AdditionalDependencies)']
             cxx_project.link.additionaldependencies = ';'.join(libraries)
             cxx_project.link.additionallibrarydirectories = ';'.join(libpaths)
             cxx_project.link.subsystem = self.subsystem
@@ -654,7 +692,7 @@ class CXXToolchain(Toolchain):
 
         cxx_project.write('{}.vcxproj'.format(project.name))
         
-        rc, _ = utils.execute('MSBuild.exe {}.vcxproj /m /nologo /p:Configuration={} /p:Platform={}'.format(
-            project.name, self.config, self.platform), self.vcvars)
+        rc, _ = utils.execute('MSBuild.exe {}.vcxproj /m  /p:Configuration={} /p:Platform={platform}'.format(
+            project.name, self.config, platform=self.platform), self.vcvars)
         if rc != 0:
             raise RuntimeError()

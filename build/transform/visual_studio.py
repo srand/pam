@@ -135,7 +135,7 @@ def _AppendEnvIfExists(env, var, value):
 
 
 def _SafeEnv(env, var):
-    return env[var] if env.get(var) else ''
+    return env[var.upper()] if env.get(var.upper()) else ''
 
 
 def VCVars(version, target="x86", host="x86", store=False):
@@ -202,8 +202,9 @@ def VCVars(version, target="x86", host="x86", store=False):
         _AppendEnvIfExists(env, 'PATH', path.join(_SafeEnv(env, 'ProgramFiles'), 'MSBuild', version, 'bin'))
         _AppendEnvIfExists(env, 'PATH', path.join(_SafeEnv(env, 'ProgramFiles(x86)'), 'MSBuild', version, 'bin'))
     if host == "x64":
-        _AppendEnvIfExists(env, 'PATH', path.join(_SafeEnv(env, 'ProgramFiles'), 'MSBuild', version, 'bin\amd64'))
-        _AppendEnvIfExists(env, 'PATH', path.join(_SafeEnv(env, 'ProgramFiles(x86)'), 'MSBuild', version, 'bin\amd64'))
+        _AppendEnvIfExists(env, 'PATH', path.join(_SafeEnv(env, 'ProgramFiles'), 'MSBuild', version, r'bin\amd64'))
+        _AppendEnvIfExists(env, 'PATH', path.join(_SafeEnv(env, 'ProgramFiles(x86)'), 'MSBuild', version, r'bin\amd64'))
+    
     _AppendEnvIfExists(env, 'PATH', path.join(env['VSINSTALLDIR'], r'VSTSDB\Deploy'))
     _AppendEnvIfExists(env, 'PATH', path.join(env['FSHARPINSTALLDIR']))
     _AppendEnvIfExists(env, 'PATH', path.join(env['DevEnvDir'], r'CommonExtensions\Microsoft\TestWindow'))

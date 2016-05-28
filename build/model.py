@@ -22,9 +22,10 @@ class _FilteredAndPublished(_Filtered):
 
 
 class Source(_Filtered):
-    def __init__(self, path, filter=None, tool=None):
+    def __init__(self, path, filter=None, tool=None, args=None):
         super(Source, self).__init__(filter)
         self.path = path
+        self.args = args
         _, self.tool = (None, tool) if tool is not None else os.path.splitext(self.path)
 
 
@@ -34,7 +35,7 @@ class SourceGroup(object):
         self.sources = []
         self.name = name
 
-    def add_sources(self, path, regex=r'.*', recurse=False, filter=None, tool=None):
+    def add_sources(self, path, regex=r'.*', recurse=False, filter=None, tool=None, **kwargs):
         all_files = [path]
         if os.path.isdir(path):
             if recurse:
@@ -45,7 +46,7 @@ class SourceGroup(object):
 
         matching_files = [file for file in all_files if re.match(regex, file)]
         for source_file in matching_files:
-            self.sources.append(Source(source_file, filter, tool))
+            self.sources.append(Source(source_file, filter, tool, kwargs))
 
 
 class Macro(_FilteredAndPublished):
