@@ -1,6 +1,13 @@
 from copy import copy
 from os import path, environ
-from _winreg import HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, OpenKey, QueryValueEx
+
+try:
+    from _winreg import HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, OpenKey, QueryValueEx
+except ImportError:
+    HKEY_CURRENT_USER = None
+    HKEY_LOCAL_MACHINE = None
+    OpenKey = None
+    QueryValueEx = None
 
 
 def _ReadKey(root, key, sub_key):
