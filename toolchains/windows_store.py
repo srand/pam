@@ -3,7 +3,35 @@ from build.transform.visual_studio import VS12VCVars, VS14VCVars
 from build.tools import msvc
 
 
-winstore_x86_vs12 = msbuild.CXXToolchain("windows-store-x86-msbuild-vs12", VS12VCVars(host="x64", target="x86", store=True))
+def PlatformToolset(platform='Win32', toolset='v140', charset='MultiByte'):
+    class _PlatformToolset:
+        def transform(self, project, cxx_project):
+            cxx_project.globals_group.platform = platform
+            cxx_project.config_props.toolset = toolset
+            cxx_project.config_props.charset = charset
+    return _PlatformToolset()
+
+
+def StoreApp(revision='10.0', platform_revision=None):
+    class _StoreApp:
+        def transform(self, project, cxx_project):
+            cxx_project.config_props.applicationtype = "Windows Store"
+            cxx_project.config_props.applicationtyperevision = revision
+            cxx_project.config_props.appcontainerapplication = "true"
+            if platform_revision:
+                cxx_project.config_props.windowstargetplatformversion = platform_revision
+                cxx_project.config_props.windowstargetplatformminversion = platform_revision
+    return _StoreApp()
+
+
+def NoPrecompiledHeader():
+    class _PrecompiledHeader:
+        def transform(self, project, cxx_project):
+            cxx_project.clcompile.precompiledheader = "NotUsing"
+    return _PrecompiledHeader()
+
+
+winstore_x86_vs12 = msbuild.CXXToolchain("windows-store-x86-msbuild-vs12", VS12VCVars(host="x64", target="x86", store=True, sdkver='8.1'))
 winstore_x86_vs12.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
 winstore_x86_vs12.add_tool('.cc', msvc.MSBuildCXXCompiler(cxx=True))
 winstore_x86_vs12.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
@@ -11,43 +39,44 @@ winstore_x86_vs12.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
 winstore_x86_vs12.add_tool('.hlsl', msvc.MSBuildShaderCompiler())
 winstore_x86_vs12.add_tool('.png', msvc.MSBuildImage())
 winstore_x86_vs12.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
-winstore_x86_vs12.platform = "Win32"
-winstore_x86_vs12.toolset = "v120"
-winstore_x86_vs12.globals.applicationtype = "Windows Store"
-winstore_x86_vs12.globals.applicationtyperevision = "8.1"
-winstore_x86_vs12.globals.appcontainerapplication = "true"
-winstore_x86_vs12.clcompile.precompiledheader = "NotUsing"
+winstore_x86_vs12.add_feature(PlatformToolset(toolset='v120'))
+winstore_x86_vs12.add_feature(StoreApp(revision='8.1'))
+winstore_x86_vs12.add_feature(NoPrecompiledHeader())
 
 
-winstore_arm = msbuild.CXXToolchain("windows-store-arm-msbuild-vs12", VS12VCVars(host="x64", target="arm", store=True))
-winstore_arm.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
-winstore_arm.add_tool('.cc', msvc.MSBuildCXXCompiler(cxx=True))
-winstore_arm.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
-winstore_arm.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
-winstore_arm.add_tool('.hlsl', msvc.MSBuildShaderCompiler())
-winstore_arm.add_tool('.png', msvc.MSBuildImage())
-winstore_arm.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
-winstore_arm.platform = "ARM"
-winstore_arm.toolset = "v120"
-winstore_arm.globals.applicationtype = "Windows Store"
-winstore_arm.globals.applicationtyperevision = "8.1"
-winstore_arm.globals.appcontainerapplication = "true"
-winstore_arm.clcompile.precompiledheader = "NotUsing"
+winstore_arm_vs12 = msbuild.CXXToolchain("windows-store-arm-msbuild-vs12", VS12VCVars(host="x64", target="arm", store=True, sdkver='8.1'))
+winstore_arm_vs12.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
+winstore_arm_vs12.add_tool('.cc', msvc.MSBuildCXXCompiler(cxx=True))
+winstore_arm_vs12.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
+winstore_arm_vs12.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
+winstore_arm_vs12.add_tool('.hlsl', msvc.MSBuildShaderCompiler())
+winstore_arm_vs12.add_tool('.png', msvc.MSBuildImage())
+winstore_arm_vs12.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
+winstore_arm_vs12.add_feature(PlatformToolset(platform='ARM', toolset='v120'))
+winstore_arm_vs12.add_feature(StoreApp(revision='8.1'))
+winstore_arm_vs12.add_feature(NoPrecompiledHeader())
 
 
-winstore_x86 = msbuild.CXXToolchain("windows-store-x86-msbuild-vs14", VS14VCVars(host="x64", target="x86", store=True))
-winstore_x86.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
-winstore_x86.add_tool('.cc', msvc.MSBuildCXXCompiler(cxx=True))
-winstore_x86.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
-winstore_x86.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
-winstore_x86.add_tool('.hlsl', msvc.MSBuildShaderCompiler())
-winstore_x86.add_tool('.png', msvc.MSBuildImage())
-winstore_x86.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
-winstore_x86.platform = "Win32"
-winstore_x86.toolset = "v140"
-winstore_x86.globals.applicationtype = "Windows Store"
-winstore_x86.globals.applicationtyperevision = "10.0"
-winstore_x86.globals.appcontainerapplication = "true"
-winstore_x86.globals.windowstargetplatformversion = "10.0.10586.0"
-winstore_x86.globals.windowstargetplatformminversion = "10.0.10586.0"
-winstore_x86.clcompile.precompiledheader = "NotUsing"
+winstore_x86_vs14 = msbuild.CXXToolchain("windows-store-x86-msbuild-vs14", VS14VCVars(host="x64", target="x86", store=True))
+winstore_x86_vs14.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
+winstore_x86_vs14.add_tool('.cc', msvc.MSBuildCXXCompiler(cxx=True))
+winstore_x86_vs14.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
+winstore_x86_vs14.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
+winstore_x86_vs14.add_tool('.hlsl', msvc.MSBuildShaderCompiler())
+winstore_x86_vs14.add_tool('.png', msvc.MSBuildImage())
+winstore_x86_vs14.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
+winstore_x86_vs14.add_feature(PlatformToolset(toolset='v140', charset=None))
+winstore_x86_vs14.add_feature(StoreApp(revision='10.0', platform_revision='10.0.10586.0'))
+winstore_x86_vs14.add_feature(NoPrecompiledHeader())
+
+winstore_arm_vs14 = msbuild.CXXToolchain("windows-store-arm-msbuild-vs14", VS14VCVars(host="x64", target="arm", store=True))
+winstore_arm_vs14.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
+winstore_arm_vs14.add_tool('.cc', msvc.MSBuildCXXCompiler(cxx=True))
+winstore_arm_vs14.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
+winstore_arm_vs14.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
+winstore_arm_vs14.add_tool('.hlsl', msvc.MSBuildShaderCompiler())
+winstore_arm_vs14.add_tool('.png', msvc.MSBuildImage())
+winstore_arm_vs14.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
+winstore_arm_vs14.add_feature(PlatformToolset(platform='ARM', toolset='v140', charset=None))
+winstore_arm_vs14.add_feature(StoreApp(revision='10.0', platform_revision='10.0.10586.0'))
+winstore_arm_vs14.add_feature(NoPrecompiledHeader())

@@ -206,6 +206,8 @@ class CXXToolchain(Toolchain, Settings):
             if isinstance(dep, model.CXXLibrary):
                 cxx_project.add_library(dep.name)            
 
+        self.apply_features(project, cxx_project)            
+
         groups = project.source_groups + [project]
         for group in groups:
             for source in group.sources:

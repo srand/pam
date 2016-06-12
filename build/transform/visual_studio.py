@@ -35,37 +35,37 @@ def _GetVSCommonToolsDir(version):
         (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\VisualStudio\SxS\VS7', version)])
 
 
-def _GetWindowsSdkDir():
+def _GetWindowsSdkDir(sdkver):
     return _ReadKeys([
-        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1', 'InstallationFolder'),
-        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1', 'InstallationFolder'),
-        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.1', 'InstallationFolder'),
-        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.1', 'InstallationFolder')])
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v{}'.format(sdkver), 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v{}'.format(sdkver), 'InstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v{}'.format(sdkver), 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v{}'.format(sdkver), 'InstallationFolder')])
 
     
-def _GetExtensionSdkDir(env):
-    manifest = "Microsoft SDKs\Windows\v8.1\ExtensionSDKs\Microsoft.VCLibs\14.0\SDKManifest.xml"
+def _GetExtensionSdkDir(env, sdkver):
+    manifest = "Microsoft SDKs\Windows\v{}\ExtensionSDKs\Microsoft.VCLibs\14.0\SDKManifest.xml".format(sdkver)
     if env.get("ProgramFiles") and path.exists(path.join(env["ProgramFiles"], manifest)):
-        return path.join(env["ProgramFiles"], 'Microsoft SDKs\Windows\v8.1\ExtensionSDKs')
+        return path.join(env["ProgramFiles"], 'Microsoft SDKs\Windows\v{}\ExtensionSDKs'.format(sdkver))
     if env.get("ProgramFiles(x86)") and path.exists(path.join(env["ProgramFiles(x86)"], manifest)):
-        return path.join(env["ProgramFiles(x86)"], 'Microsoft SDKs\Windows\v8.1\ExtensionSDKs')
+        return path.join(env["ProgramFiles(x86)"], 'Microsoft SDKs\Windows\v{}\ExtensionSDKs'.format(sdkver))
     return ''
 
 
-def _GetWindowsSdkExecutablePath32():
+def _GetWindowsSdkExecutablePath32(sdkver):
     return _ReadKeys([
-        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1A\WinSDK-NetFx40Tools', 'InstallationFolder'),
-        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1A\WinSDK-NetFx40Tools', 'InstallationFolder'),
-        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.1A\WinSDK-NetFx40Tools', 'InstallationFolder'),
-        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.1A\WinSDK-NetFx40Tools', 'InstallationFolder')])
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools'.format(sdkver), 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools'.format(sdkver), 'InstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools'.format(sdkver), 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools'.format(sdkver), 'InstallationFolder')])
 
 
-def _GetWindowsSdkExecutablePath64():
+def _GetWindowsSdkExecutablePath64(sdkver):
     return _ReadKeys([
-        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1A\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
-        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v8.1A\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
-        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.1A\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
-        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v8.1A\WinSDK-NetFx40Tools-x64', 'InstallationFolder')])
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools-x64'.format(sdkver), 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools-x64'.format(sdkver), 'InstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools-x64'.format(sdkver), 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools-x64'.format(sdkver), 'InstallationFolder')])
 
 
 def _GetVSInstallDir(version):
@@ -145,7 +145,7 @@ def _SafeEnv(env, var):
     return env[var.upper()] if env.get(var.upper()) else ''
 
 
-def VCVars(version, target="x86", host="x86", store=False):
+def VCVars(version, target="x86", host="x86", store=False, sdkver='10.0'):
     env = {}
     for key in environ:
         env[key] = environ.get(key)
@@ -153,10 +153,10 @@ def VCVars(version, target="x86", host="x86", store=False):
     env['VS140COMNTOOLS'] = _GetVSCommonToolsDir(version)
     env['Framework40Version'] = 'v4.0'
     env['VisualStudioVersion'] = version
-    env['WindowsSdkDir'] = _GetWindowsSdkDir() 
-    env['ExtensionSdkDir'] = _GetExtensionSdkDir(env)
-    env['WindowsSDK_ExecutablePath_x86'] = _GetWindowsSdkExecutablePath32()
-    env['WindowsSDK_ExecutablePath_x64'] = _GetWindowsSdkExecutablePath64()
+    env['WindowsSdkDir'] = _GetWindowsSdkDir(sdkver) 
+    env['ExtensionSdkDir'] = _GetExtensionSdkDir(env, sdkver)
+    env['WindowsSDK_ExecutablePath_x86'] = _GetWindowsSdkExecutablePath32(sdkver)
+    env['WindowsSDK_ExecutablePath_x64'] = _GetWindowsSdkExecutablePath64(sdkver)
     env['VSINSTALLDIR'] = _GetVSInstallDir(version)
     env['VCINSTALLDIR'] = _GetVCInstallDir(version)
     env['FSHARPINSTALLDIR'] = _GetFSharpInstallDir()

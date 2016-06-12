@@ -582,7 +582,10 @@ class CXXProject(Project):
     def __init__(self, toolchain):
         super(CXXProject, self).__init__()
         self.configs_group = ProjectConfigurationsItemGroup()
-        self.globals_group = deepcopy(toolchain.globals)    
+        self.globals_group = PropertyGroup('Globals')
+        self.globals_group.platform = "Win32"
+        self.globals_group.toolset = "v120"
+            
         self.macros_group = PropertyGroup('UserMacros')    
         self.config = self.create_projectconfiguration(toolchain.config, toolchain.platform)
         self.config_props = self.create_configuration_property_group(self.config)        
@@ -599,7 +602,7 @@ class CXXProject(Project):
 
         self.append(Import('$(VCTargetsPath)\Microsoft.Cpp.targets'))
         
-        self.clcompile = deepcopy(toolchain.clcompile)
+        self.clcompile = ClCompile()
         self.definitions_group.append(self.clcompile)
         
         self.lib = self.definitions_group.create_lib()
@@ -623,17 +626,7 @@ class CXXToolchain(Toolchain):
         self.toolset = 'v140'
         self.charset = None
         self.subsystem = 'Console'
-        self.globals = PropertyGroup('Globals')
-        self.clcompile = ClCompile()
         self.output = "output/{}".format(name)
-
-    def add_tool(self, extension, driver):
-        self._tools[extension] = driver
-
-    def get_tool(self, extension):
-        if extension not in self._tools:
-            raise RuntimeError('could not find tool for {} extension'.format(extension))
-        return self._tools[extension]
 
     def transform(self, project):
         cxx_project = CXXProject(self)
@@ -641,7 +634,6 @@ class CXXToolchain(Toolchain):
 
         cxx_project.globals_group.projectname = project.name
         cxx_project.globals_group.projectguid = '{%s}' % project.uuid
-        cxx_project.globals_group.platform = self.platform
 
         def key_value(key, value):
             return key if value is None else "{}={}".format(key, value)
@@ -670,11 +662,11 @@ class CXXToolchain(Toolchain):
         cxx_project.clcompile.preprocessordefinitions = ';'.join(macros)
         cxx_project.clcompile.trackerlogdirectory = "$(IntDir)"
 
-        cxx_project.config_props.toolset = self.toolset
-        cxx_project.config_props.charset = self.charset
         cxx_project.properties_group.intdir = "{}/{}/".format(self.output, project.name)
         cxx_project.properties_group.outdir = "{}/{}/".format(self.output, project.name)
         cxx_project.properties_group.targetpath = "$(OutDir)$(TargetName)$(TargetExt)"
+
+        self.apply_features(project, cxx_project)
 
         groups = project.source_groups + [project]
         for group in groups:

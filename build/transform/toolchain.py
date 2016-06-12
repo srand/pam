@@ -31,9 +31,6 @@ class ToolchainRegistry(object):
         return [tc for tc in ToolchainRegistry._toolchains.values() if re.search(platform.system().lower(), tc.name)]
 
 
-
-
-
 class ToolchainLoader(Loader):
     def __init__(self, path):
         super(ToolchainLoader, self).__init__("build.toolchains", path)
@@ -43,9 +40,26 @@ class Toolchain(object):
     def __init__(self, name):
         super(Toolchain, self).__init__()
         self._tools = {}
+        self._features = []
         self.name = name
         ToolchainRegistry.add(self)
 
+    def add_feature(self, feature):
+        self._features.append(feature)
+
+    def apply_features(self, project, cxx_project):
+        for feature in self._features:
+            feature.transform(project, cxx_project)
+
+    def add_tool(self, extension, driver):
+        self._tools[extension] = driver
+
+    def get_tool(self, extension):
+        if extension not in self._tools:
+            raise RuntimeError('could not find tool for extension {}'.format(extension))
+        return self._tools[extension]
+        
+        
     def transform(self, project):
         pass
 
