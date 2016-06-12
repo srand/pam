@@ -54,7 +54,7 @@ class PyBuildCXXCompiler(Tool):
         incpaths = ['/I{}'.format(path) for path in cxx_project.incpaths]
         flags = cxx_project.cflags if not self._cxx else cxx_project.cxxflags
 
-        return "{} /nologo {} {} {} /c /T{}{} /Fo{}".format(
+        return "{} /nologo {} {} {} /c /T{}{} /Fo{} > nul".format(
             self._executable, 
             ' '.join(flags),
             ' '.join(definitions),
@@ -78,6 +78,7 @@ class PyBuildCXXCompiler(Tool):
         cxx_project.add_job(obj)
         cxx_project.add_dependency(obj.product, source_file.path)
         cxx_project.add_dependency(obj.product, dir.product)
+        return obj
 
 
 class PyBuildCXXArchiver(Tool):
@@ -114,6 +115,7 @@ class PyBuildCXXArchiver(Tool):
         cxx_project.add_dependency(library.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(library.product, obj)
+        return library
 
 
 class PyBuildCXXLinker(Tool):
@@ -156,5 +158,5 @@ class PyBuildCXXLinker(Tool):
         cxx_project.add_dependency(executable.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(executable.product, obj)
-
+        return executable
 

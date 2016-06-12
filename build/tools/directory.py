@@ -9,7 +9,8 @@ class _Directory(pybuild.Command):
             cmdline = "cmd /c if not exist \"{dir}\" mkdir \"{dir}\"".format(dir=dirname)
         else:
             cmdline = "mkdir -p \"{dir}\"".format(dir=dirname)
-        super(_Directory, self).__init__(dirname, cmdline)
+        info = '[MKDIR] {}'.format(dirname)
+        super(_Directory, self).__init__(dirname, cmdline, info)
 
 
 class PyBuildDirectoryCreator(Tool):

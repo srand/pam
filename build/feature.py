@@ -6,7 +6,7 @@ class FeatureRegistry(object):
     
     @staticmethod
     def add(feature):
-        print("Registering feature: {}".format(feature.name))
+        # print("Registering feature: {}".format(feature.name))
         FeatureRegistry._features[feature.name] = feature
         
     @staticmethod

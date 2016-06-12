@@ -106,6 +106,9 @@ class Job(object):
 
     def add_dependency(self, job):
         self._deps[job.product] = job
+        
+    def dependencies(self):
+        return self._deps.keys()
 
     def execute(self):
         if self.driver:
@@ -183,7 +186,7 @@ class CXXToolchain(Toolchain, Settings):
     def linker(self, linker_driver):
         self._cxx_linker = linker_driver
 
-    def transform(self, project):
+    def generate(self, project):
         cxx_project = CXXProject(self, project.name)
         
         macros = [macro for macro in project.macros if macro.matches(self.name)]
@@ -219,15 +222,18 @@ class CXXToolchain(Toolchain, Settings):
         if isinstance(project, model.CXXLibrary):
             objects = cxx_project.objects
             object_names = [obj.product for obj in objects]
-            self.archiver.transform(cxx_project, object_names)
+            cxx_project.job = self.archiver.transform(cxx_project, object_names)
 
         if isinstance(project, model.CXXExecutable):
             objects = cxx_project.objects
             object_names = [obj.product for obj in objects]
-            self.linker.transform(cxx_project, object_names)
-                        
-        cxx_project.transform()
-        
+            cxx_project.job = self.linker.transform(cxx_project, object_names)
+            
+        return cxx_project
+            
+    def transform(self, project):
+        self.generate(project).transform()
+
 
 class CXXProject(Settings):
     def __init__(self, toolchain, name):

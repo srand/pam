@@ -79,7 +79,7 @@ class ProjectRegistry(object):
     
     @staticmethod
     def add(project):
-        print("Registering project: {}".format(project.name))
+        # print("Registering project: {}".format(project.name))
         ProjectRegistry._projects[project.name] = project
         
     @staticmethod
