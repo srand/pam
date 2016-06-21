@@ -148,11 +148,13 @@ class ProjectConfigurationsItemGroup(ItemGroup):
 @Attribute('ConfigurationType', varname='type', child=True, values=['Application', 'SharedLibrary', 'StaticLibrary'])
 @Attribute('PlatformToolset', varname='toolset', child=True, values=['v110', 'v120', 'v110_xp', 'v120_xp', 'v140', 'v140_xp'])
 @Attribute('CharacterSet', varname='charset', child=True, values=['MultiByte', None])
+@Attribute('PreferredToolArchitecture', varname='tool_architecture', child=True, values=['x64'])
 class ConfigurationPropertyGroup(PropertyGroup):
     def __init__(self, project_config):
         super(ConfigurationPropertyGroup, self).__init__('Configuration')
         self.condition = project_config.condition
-    
+        self.tool_architecture = 'x64'
+
 
 @Attribute('Project')
 class Import(SubElement):
@@ -618,11 +620,11 @@ class CXXProject(Project):
 
 
 class CXXToolchain(Toolchain):
-    def __init__(self, name, vcvars=VS14VCVars(target="x64", host="x64")):
+    def __init__(self, name, platform=None, vcvars=VS14VCVars(target="x64", host="x64")):
         super(CXXToolchain, self).__init__(name)
         self.vcvars = vcvars
         self.config = 'Default'
-        self.platform = 'x64'
+        self.platform = 'x64' if not platform else platform
         self.toolset = 'v140'
         self.charset = None
         self.subsystem = 'Console'
@@ -634,6 +636,7 @@ class CXXToolchain(Toolchain):
 
         cxx_project.globals_group.projectname = project.name
         cxx_project.globals_group.projectguid = '{%s}' % project.uuid
+        cxx_project.globals_group.platform = self.platform
 
         def key_value(key, value):
             return key if value is None else "{}={}".format(key, value)
@@ -671,7 +674,7 @@ class CXXToolchain(Toolchain):
         groups = project.source_groups + [project]
         for group in groups:
             for source in group.sources:
-                print(source.path)
+                # print(source.path)
                 tool = self.get_tool(source.tool)
                 if tool is None:
                     raise RuntimeError()

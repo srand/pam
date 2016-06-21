@@ -36,20 +36,26 @@ class ToolchainLoader(Loader):
         super(ToolchainLoader, self).__init__("build.toolchains", path)
 
 
+class ToolchainAttributes(object):
+    def __init__(self, toolchain):
+        self.output = os.path.join("output", toolchain.name)
+
+
 class Toolchain(object):
     def __init__(self, name):
         super(Toolchain, self).__init__()
         self._tools = {}
         self._features = []
         self.name = name
+        self.attributes = ToolchainAttributes(self)
         ToolchainRegistry.add(self)
 
     def add_feature(self, feature):
         self._features.append(feature)
 
-    def apply_features(self, project, cxx_project):
+    def apply_features(self, project, transformed_project):
         for feature in self._features:
-            feature.transform(project, cxx_project)
+            feature.transform(project, transformed_project)
 
     def add_tool(self, extension, driver):
         self._tools[extension] = driver
@@ -58,11 +64,36 @@ class Toolchain(object):
         if extension not in self._tools:
             raise RuntimeError('could not find tool for extension {}'.format(extension))
         return self._tools[extension]
-        
-        
+
     def transform(self, project):
         pass
 
+
+class ToolchainExtender(Toolchain):
+    def __init__(self, name, toolchain):
+        super(ToolchainExtender, self).__init__(name)
+        self.toolchain = toolchain
+
+    @property
+    def attribute(self):
+        return self.toolchain.attributes
+
+    def apply_features(self, project, transformed_project):
+        self.toolchain.apply_features(project, transformed_project)
+        super(ToolchainExtender, self).apply_features(project, transformed_project)
+
+    def get_tool(self, extension):
+        try:
+            return super(ToolchainExtender, self).get_tool(extension)
+        except:
+            pass
+        return self.toolchain.get_Tool(extension)
+
+    def generate(self, project, toolchain=None):
+        return self.toolchain.generate(project, toolchain)
+
+    def transform(self, project):
+        self.generate(project, self).transform()
 
 """        
 def mac_x86_libcxx_settings():

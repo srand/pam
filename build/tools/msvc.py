@@ -44,7 +44,7 @@ class PyBuildCXXCompiler(Tool):
         return PyBuildDirectoryCreator().transform(cxx_project, dirname)
         
     def _product(self, cxx_project, source_file):
-        return '{output}{}{}'.format(source_file, self._output_ext, output=cxx_project.output)
+        return path.join(cxx_project.output, '{}{}'.format(source_file, self._output_ext))
         
     def _cmdline(self, cxx_project, source_file):
         def key_value(key, value):
@@ -92,7 +92,7 @@ class PyBuildCXXArchiver(Tool):
         return PyBuildDirectoryCreator().transform(cxx_project, dirname)
 
     def _product(self, cxx_project):
-        return '{output}{}{}{}'.format(self._output_pfx, cxx_project.name, self._output_ext, output=cxx_project.output)
+        return path.join(cxx_project.output, '{}{}{}'.format(self._output_pfx, cxx_project.name, self._output_ext))
 
     def _cmdline(self, cxx_project, object_files):
         return "{} /nologo /out:{} {}".format(
@@ -128,7 +128,7 @@ class PyBuildCXXLinker(Tool):
         return PyBuildDirectoryCreator().transform(cxx_project, dirname)
 
     def _product(self, cxx_project):
-        return '{output}{}{}'.format(cxx_project.name, self._output_ext, output=cxx_project.output)
+        return path.join(cxx_project.output, '{}{}'.format(cxx_project.name, self._output_ext))
 
     def _cmdline(self, cxx_project, object_files):
         libpaths = ['/libpath:{}'.format(path) for path in cxx_project.libpaths]

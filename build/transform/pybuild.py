@@ -2,7 +2,7 @@ from build import model
 from build.transform import utils
 from build.transform.toolchain import Toolchain
 from copy import copy
-from os import path
+from os import path, stat
 
 
 class Settings(object):
@@ -82,10 +82,12 @@ class Settings(object):
 
 class Job(object):
     def __init__(self, product, driver=None):
-        self._product = product
+        self._product = path.normpath(product)
         self._driver = driver
         self._completed = False
         self._deps = {}
+        self._timestamp = 0
+        self._required = None
 
     @property
     def product(self):
@@ -101,8 +103,18 @@ class Job(object):
 
     @property
     def required(self):
-        required_deps = [dep for dep in self._deps.values() if dep.required]
-        return not self.completed or required_deps
+        if self._required is None:
+            deps_timestamp = max([dep.timestamp for dep in self._deps.values()] + [0])
+            deps_required = [dep for dep in self._deps.values() if dep.required]
+            self._required = deps_required or deps_timestamp > self.timestamp
+        return self._required 
+
+    @property
+    def timestamp(self):
+        if path.exists(self.product):
+            s = stat(self.product)
+            if s: self._timestamp = s.st_mtime
+        return self._timestamp
 
     def add_dependency(self, job):
         self._deps[job.product] = job
@@ -111,6 +123,8 @@ class Job(object):
         return self._deps.keys()
 
     def execute(self):
+        if self.completed: 
+            return
         if self.driver:
             driver.execute(product, self)
 
@@ -137,15 +151,10 @@ class Command(Job):
 
     def execute(self):
         if self.completed: return
-
-        required_deps = [dep for dep in self._deps.values() if dep.required]
-        for dep in required_deps:
-            dep.execute()
-
-        #print self.info
-        print '\t', self.cmdline
+        utils.print_locked(self.info)
+        # utils.print_locked(self._cmdline)
         rc, stdout = utils.execute(self._cmdline, self._env)
-        if rc != 0: raise RuntimeError('job failed')
+        if rc != 0: raise RuntimeError('job failed: ' + self._cmdline)
         self._completed = True
 
 
@@ -154,13 +163,12 @@ class Object(Command):
         super(Object, self).__init__(product, cmdline, info, env)
 
 
-class CXXToolchain(Toolchain, Settings):
+class CXXToolchain(Toolchain):
     def __init__(self, name):
         super(CXXToolchain, self).__init__(name)
         self._tools = {}
         self._cxx_archiver = None
         self._cxx_linker = None
-        self.output = "output/{}".format(name)
 
     def add_tool(self, extension, driver):
         self._tools[extension] = driver
@@ -186,8 +194,8 @@ class CXXToolchain(Toolchain, Settings):
     def linker(self, linker_driver):
         self._cxx_linker = linker_driver
 
-    def generate(self, project):
-        cxx_project = CXXProject(self, project.name)
+    def generate(self, project, toolchain=None):
+        cxx_project = CXXProject(toolchain if toolchain else self, project.name)
         
         macros = [macro for macro in project.macros if macro.matches(self.name)]
         incpaths = [incpath for incpath in project.incpaths if incpath.matches(self.name)]
@@ -209,7 +217,7 @@ class CXXToolchain(Toolchain, Settings):
             if isinstance(dep, model.CXXLibrary):
                 cxx_project.add_library(dep.name)            
 
-        self.apply_features(project, cxx_project)            
+        cxx_project.toolchain.apply_features(project, cxx_project)            
 
         groups = project.source_groups + [project]
         for group in groups:
@@ -237,11 +245,11 @@ class CXXToolchain(Toolchain, Settings):
 
 class CXXProject(Settings):
     def __init__(self, toolchain, name):
-        super(CXXProject, self).__init__(toolchain)
+        super(CXXProject, self).__init__()
         self._jobs = {}
         self.name = name
         self.toolchain = toolchain
-        self.output = "{output}/{name}/".format(output=toolchain.output, name=name)
+        self.output = path.join(toolchain.attributes.output, name)
         
     @property
     def objects(self):
@@ -264,7 +272,7 @@ class CXXProject(Settings):
         return job
 
     def get_job(self, job):
-        return self._jobs.get(job) 
+        return self._jobs.get(path.normpath(job)) 
        
     def add_dependency(self, product1, product2):
         if product1 not in self._jobs:
@@ -275,7 +283,41 @@ class CXXProject(Settings):
         job1.add_dependency(job2)
 
     def transform(self):
-        for product in self._jobs:
-            job = self._jobs[product]
-            if job.required:
-                job.execute()
+        jobs = {}
+        consumes = {}
+        for product, job in self._jobs.iteritems():
+            jobs[product] = []
+            consumes[product] = []
+
+        # Build graph of inverse dependencies
+        for product, job in self._jobs.iteritems():
+            for depname in job.dependencies():
+                dep = self._jobs[depname]
+                jobs[product].append(dep)
+                if dep.product not in consumes:
+                    consumes[dep.product] = []    
+                consumes[dep.product].append(job)
+        
+        # Process jobs
+        pool = utils.Pool()
+        while jobs:
+            candidates = [self._jobs[product] for product, deplist in jobs.iteritems() if not deplist]
+            for job in candidates:
+                del jobs[job.product]
+                pool.put(job) 
+
+            completed = []
+            try:
+                job = pool.get()
+                while job:
+                    completed.append(job)
+                    job = pool.get_nowait()
+            except Exception as e:
+                print(e)
+                break
+
+            for job in completed:
+                for consumer in consumes[job.product]:
+                    jobs[consumer.product].remove(job)
+
+        pool.stop()

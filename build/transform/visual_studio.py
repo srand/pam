@@ -1,5 +1,5 @@
 from copy import copy
-from os import path, environ
+from os import path, environ, listdir
 
 try:
     from _winreg import HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, OpenKey, QueryValueEx
@@ -224,8 +224,12 @@ def VCVars(version, target="x86", host="x86", store=False, sdkver='10.0'):
     _AppendEnv(env, 'LIB', path.join(env['WindowsSdkDir'], r'lib\winv6.3\um\{}'.format(target)))
 
     if env['UniversalCRTSdkDir']:
-        _AppendEnv(env, 'INCLUDE', path.join(env['UniversalCRTSdkDir'], r'include\10.0.10056.0\ucrt'))
-        _AppendEnv(env, 'LIB', path.join(env['UniversalCRTSdkDir'], r'lib\10.0.10056.0\ucrt\{}'.format(target)))
+        try:
+            sdkver = listdir(path.join(env['UniversalCRTSdkDir'], 'include'))[-1]
+            _AppendEnv(env, 'INCLUDE', path.join(env['UniversalCRTSdkDir'], r'include\{}\ucrt'.format(sdkver)))
+            _AppendEnv(env, 'LIB', path.join(env['UniversalCRTSdkDir'], r'lib\{}\ucrt\{}'.format(sdkver, target)))
+        except:
+            pass
 
     _AppendEnvIfExists(env, 'INCLUDE', path.join(env['VCINSTALLDIR'], r'ATLMFC\INCLUDE'))
     _AppendEnvIfExists(env, 'INCLUDE', path.join(env['VCINSTALLDIR'], r'INCLUDE'))

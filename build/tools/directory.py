@@ -1,6 +1,7 @@
 from build.transform import pybuild
 from build.tools import Tool
 import platform
+from os import path
 
 
 class _Directory(pybuild.Command):
@@ -9,8 +10,16 @@ class _Directory(pybuild.Command):
             cmdline = "cmd /c if not exist \"{dir}\" mkdir \"{dir}\"".format(dir=dirname)
         else:
             cmdline = "mkdir -p \"{dir}\"".format(dir=dirname)
-        info = '[MKDIR] {}'.format(dirname)
+        info = ' [MKDIR] {}'.format(dirname)
         super(_Directory, self).__init__(dirname, cmdline, info)
+
+    @property
+    def required(self):
+        return not path.exists(self.product)
+
+    @property
+    def timestamp(self):
+        return 0
 
 
 class PyBuildDirectoryCreator(Tool):

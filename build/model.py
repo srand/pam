@@ -24,7 +24,7 @@ class _FilteredAndPublished(_Filtered):
 class Source(_Filtered):
     def __init__(self, path, filter=None, tool=None, args=None):
         super(Source, self).__init__(filter)
-        self.path = path
+        self.path = os.path.normpath(path)
         self.args = args
         _, self.tool = (None, tool) if tool is not None else os.path.splitext(self.path)
 
