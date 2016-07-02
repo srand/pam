@@ -10,6 +10,7 @@ from xml.etree.ElementTree import ElementTree
 from xml.dom import minidom
 
 import os
+import uuid
 from copy import deepcopy
 
 
@@ -92,21 +93,8 @@ class Group(SubElement):
         self.label = label    
 
 
-@Attribute('AppContainerApplication', child=True)
-@Attribute('ApplicationType', child=True)
-@Attribute('ApplicationTypeRevision', child=True)
-@Attribute('CustomBuildAfterTargets', child=True)
-@Attribute('CustomBuildBeforeTargets', child=True)
-@Attribute('DefaultLanguage', child=True)
-@Attribute('EnableDotNetNativeCompatibleProfile', child=True)
-@Attribute('Keyword', child=True)
-@Attribute('MinimumVisualStudioVersion', child=True)
 @Attribute('Platform', child=True)
-@Attribute('ProjectGUID', child=True)
-@Attribute('ProjectName', child=True)
-@Attribute('RootNamespace', child=True)
-@Attribute('WindowsTargetPlatformMinVersion', child=True)
-@Attribute('WindowsTargetPlatformVersion', child=True)
+@Attribute('Condition')
 class PropertyGroup(Group):
     def __init__(self, label=None):
         super(PropertyGroup, self).__init__('PropertyGroup', label)
@@ -132,7 +120,7 @@ class ProjectConfiguration(SubElement):
         self.configuration = config
         self.platform = platform
         self.include = "{}|{}".format(self.configuration, self.platform)
-        
+
     @property
     def condition(self):
         return '\'$(Configuration)|$(Platform)\' == \'{}\''.format(self.include)
@@ -144,16 +132,16 @@ class ProjectConfigurationsItemGroup(ItemGroup):
         super(ProjectConfigurationsItemGroup, self).__init__('ProjectConfigurations')
 
 
-@Attribute('Condition')
 @Attribute('ConfigurationType', varname='type', child=True, values=['Application', 'SharedLibrary', 'StaticLibrary'])
 @Attribute('PlatformToolset', varname='toolset', child=True, values=['v110', 'v120', 'v110_xp', 'v120_xp', 'v140', 'v140_xp'])
 @Attribute('CharacterSet', varname='charset', child=True, values=['MultiByte', None])
 @Attribute('PreferredToolArchitecture', varname='tool_architecture', child=True, values=['x64'])
-class ConfigurationPropertyGroup(PropertyGroup):
+class CXXConfigurationPropertyGroup(PropertyGroup):
     def __init__(self, project_config):
-        super(ConfigurationPropertyGroup, self).__init__('Configuration')
+        super(CXXConfigurationPropertyGroup, self).__init__('Configuration')
         self.condition = project_config.condition
         self.tool_architecture = 'x64'
+
 
 
 @Attribute('Project')
@@ -167,6 +155,13 @@ class Import(SubElement):
 class ImportGroup(SubElement):
     def __init__(self):
         super(ImportGroup, self).__init__('ImportGroup')
+
+
+@Attribute('Include')
+class Compile(SubElement):
+    def __init__(self, include=None):
+        super(Compile, self).__init__('Compile')
+        self.include = include
 
 
 @Attribute('AdditionalIncludeDirectories', child=True)
@@ -433,6 +428,7 @@ class NativeReference(SubElement):
         super(NativeReference, self).__init__('NativeReference')
 
 
+@Attribute('Include')
 @Attribute('Name', child=True)
 @Attribute('Project', child=True)
 @Attribute('Package', child=True)
@@ -469,6 +465,13 @@ class Content(SubElement):
 class Image(SubElement):
     def __init__(self, include):
         super(Image, self).__init__('Image')
+        self.include = include
+
+
+@Attribute('Include')
+class Media(SubElement):
+    def __init__(self, include):
+        super(Media, self).__init__('Media')
         self.include = include
 
 
@@ -537,17 +540,108 @@ class Project(ElementTree):
             f.write(data)
 
 
+@Attribute('Include')
+@Attribute('Filter', child=True)
+class FilterElement(SubElement):
+    def __init__(self, name, include=None):
+        super(FilterElement, self).__init__(name)
+        self.include = include
+
+class FilterAppxManifest(FilterElement):
+    def __init__(self, include=None):
+        super(FilterAppxManifest, self).__init__('AppxManifest', include)
+
+class FilterCompile(FilterElement):
+    def __init__(self, include=None):
+        super(FilterCompile, self).__init__('Compile', include)
+
+class FilterClCompile(FilterElement):
+    def __init__(self, include=None):
+        super(FilterClCompile, self).__init__('ClCompile', include)
+
+class FilterFxCompile(FilterElement):
+    def __init__(self, include=None):
+        super(FilterFxCompile, self).__init__('FxCompile', include)
+
+class FilterContent(FilterElement):
+    def __init__(self, include=None):
+        super(FilterContent, self).__init__('Content', include)
+
+class FilterImage(FilterElement):
+    def __init__(self, include=None):
+        super(FilterImage, self).__init__('Image', include)
+
+class FilterMedia(FilterElement):
+    def __init__(self, include=None):
+        super(FilterMedia, self).__init__('Media', include)
+
+class FilterNone(FilterElement):
+    def __init__(self, include=None):
+        super(FilterNone, self).__init__('None', include)
+
+@Attribute('Include')
+@Attribute('UniqueIdentifier', child=True)
+class Filter(SubElement):
+    def __init__(self, name=None):
+        super(Filter, self).__init__('Filter')
+        self.include = name
+        self.uniqueidentifier = '{%s}' % str(uuid.uuid4())
+
+@Composition(Filter, 'filter')
+@Composition(FilterAppxManifest, 'appxmanifest')
+@Composition(FilterClCompile, 'clcompile')
+@Composition(FilterFxCompile, 'fxcompile')
+@Composition(FilterContent, 'content')
+@Composition(FilterImage, 'image')
+@Composition(FilterMedia, 'media')
+@Composition(FilterNone, 'none')
+class FilterItemGroup(ItemGroup):
+    def __init__(self):
+        super(FilterItemGroup, self).__init__('FilterItemGroup')
+
+@Composition(FilterItemGroup, 'item_group')
+class FilterProject(Project):
+    def __init__(self):
+        super(FilterProject, self).__init__()
+        self.filters = self.create_item_group()
+        
+    def add_sources(self, tool, group, sources):
+        ig = tool.transform(self, sources)
+        if not isinstance(group, model.Project):
+            for elem in list(ig):
+                elem.filter = group.name 
+
+    def add_group(self, group):
+        if not isinstance(group, model.Project):
+            self.filters.create_filter(group.name)
+
+
+@Attribute('AppContainerApplication', child=True)
+@Attribute('ApplicationType', child=True)
+@Attribute('ApplicationTypeRevision', child=True)
+@Attribute('CustomBuildAfterTargets', child=True)
+@Attribute('CustomBuildBeforeTargets', child=True)
+@Attribute('DefaultLanguage', child=True)
+@Attribute('EnableDotNetNativeCompatibleProfile', child=True)
 @Attribute('IntDir', child=True)
 @Attribute('GenerateManifest', child=True)
+@Attribute('Keyword', child=True)
 @Attribute('LinkIncremental', child=True)
+@Attribute('MinimumVisualStudioVersion', child=True)
 @Attribute('OutDir', child=True)
+@Attribute('ProjectGUID', child=True)
+@Attribute('ProjectName', child=True)
+@Attribute('RootNamespace', child=True)
 @Attribute('TargetDir', child=True)
 @Attribute('TargetName', child=True)
 @Attribute('TargetExt', child=True)
 @Attribute('TargetPath', child=True)
+@Attribute('UseDotNetNativeToolchain', child=True)
+@Attribute('WindowsTargetPlatformMinVersion', child=True)
+@Attribute('WindowsTargetPlatformVersion', child=True)
 class CXXPropertyGroup(PropertyGroup):
-    def __init__(self):
-        super(CXXPropertyGroup, self).__init__()
+    def __init__(self, name=None):
+        super(CXXPropertyGroup, self).__init__(name)
 
 
 @Composition(ClCompile, 'clcompile')
@@ -559,6 +653,7 @@ class CXXPropertyGroup(PropertyGroup):
 @Composition(ProjectReference, 'projectreference')
 @Composition(Content, 'content')
 @Composition(Image, 'image')
+@Composition(Media, 'media')
 @Composition(NoneTask, 'none')
 @Composition(AppxManifest, 'appxmanifest')
 class CXXItemGroup(ItemGroup):
@@ -575,48 +670,59 @@ class CXXItemDefinitionGroup(ItemDefinitionGroup):
         super(CXXItemDefinitionGroup, self).__init__(label)
         
 
-@Composition(CXXItemGroup, 'itemgroup')
-@Composition(CXXItemDefinitionGroup, 'itemdefinitiongroup')
-@Composition(CXXPropertyGroup, 'propertygroup')
-@Composition(Import, 'import')
-@Composition(ImportGroup, 'importgroup')
+#@Composition(CXXItemGroup, 'itemgroup')
+#@Composition(CXXItemDefinitionGroup, 'itemdefinitiongroup')
+#@Composition(CXXPropertyGroup, 'propertygroup')
+#@Composition(Import, 'import')
+#@Composition(ImportGroup, 'importgroup')
 class CXXProject(Project):
     def __init__(self, toolchain):
         super(CXXProject, self).__init__()
         self.configs_group = ProjectConfigurationsItemGroup()
-        self.globals_group = PropertyGroup('Globals')
+        self.globals_group = CXXPropertyGroup('Globals')
         self.globals_group.platform = "Win32"
-        self.globals_group.toolset = "v120"
-            
+        self.globals_group.toolset = "v140"
         self.macros_group = PropertyGroup('UserMacros')    
-        self.config = self.create_projectconfiguration(toolchain.config, toolchain.platform)
-        self.config_props = self.create_configuration_property_group(self.config)        
 
         self.append(self.configs_group)
         self.append(self.globals_group)
         self.append(Import('$(VCTargetsPath)\Microsoft.Cpp.Default.props'))
         self.append(Import('$(VCTargetsPath)\Microsoft.Cpp.props'))
         self.append(self.macros_group)
-        
-        self.definitions_group = self.create_itemdefinitiongroup()        
-        self.properties_group = self.create_propertygroup()
-        self.items_group = self.create_itemgroup()
-
         self.append(Import('$(VCTargetsPath)\Microsoft.Cpp.targets'))
-        
+
+        self.config = self.create_projectconfiguration(toolchain.config, toolchain.platform)
+        self.config_props = self.create_configuration_property_group(self.config)        
+        self.definitions_group = self.create_item_definitiongroup()        
+        self.properties_group = self.create_property_group()
         self.clcompile = ClCompile()
-        self.definitions_group.append(self.clcompile)
-        
+        self.definitions_group.append(self.clcompile)        
         self.lib = self.definitions_group.create_lib()
         self.link = self.definitions_group.create_link()
-            
+
     def create_projectconfiguration(self, config_name, platform):
         return self.configs_group.create_projectconfiguration(config_name, platform)
-        
+
     def create_configuration_property_group(self, project_config):
-        cpg = ConfigurationPropertyGroup(project_config)
-        self.getroot().insert(5, cpg)
+        cpg = CXXConfigurationPropertyGroup(project_config)
+        self.getroot().insert(2, cpg)
         return cpg
+
+    def create_item_group(self):
+        ig = CXXItemGroup()
+        self.getroot().insert(-1, ig)
+        return ig
+
+    def create_item_definitiongroup(self):
+        idg = CXXItemDefinitionGroup()
+        self.getroot().insert(-1, idg)
+        return idg        
+
+    def create_property_group(self):
+        pg = CXXPropertyGroup()
+        self.getroot().insert(-1, pg)
+        return pg        
+
 
 
 class CXXToolchain(Toolchain):
@@ -630,7 +736,9 @@ class CXXToolchain(Toolchain):
         self.subsystem = 'Console'
         self.output = "output/{}".format(name)
 
-    def transform(self, project):
+    def generate(self, project):
+        filter_project = FilterProject()
+
         cxx_project = CXXProject(self)
         cxx_project.tools_version = self.vcvars['VisualStudioVersion']
 
@@ -673,12 +781,19 @@ class CXXToolchain(Toolchain):
 
         groups = project.source_groups + [project]
         for group in groups:
+            tool_sources = {}
             for source in group.sources:
-                # print(source.path)
-                tool = self.get_tool(source.tool)
+                if source.tool not in tool_sources:
+                    tool_sources[source.tool] = []
+                tool_sources[source.tool].append(source)
+            for tool_name in tool_sources:
+                tool = self.get_tool(tool_name)
                 if tool is None:
                     raise RuntimeError()
-                tool.transform(cxx_project, source)
+                sources = tool_sources[tool_name]
+                tool.transform(cxx_project, sources)
+                filter_project.add_sources(tool, group, sources)
+            filter_project.add_group(group)
 
         for feature in project.features:
             if feature.matches(self.name):
@@ -686,8 +801,149 @@ class CXXToolchain(Toolchain):
                 feature.transform(project, cxx_project)
 
         cxx_project.write('{}.vcxproj'.format(project.name))
-        
+        filter_project.write('{}.vcxproj.filters'.format(project.name))
+
+    def transform(self, project):
+        self.generate(project)        
         rc, _ = utils.execute('MSBuild.exe {}.vcxproj /m  /p:Configuration={} /p:Platform={platform}'.format(
+            project.name, self.config, platform=self.platform), self.vcvars)
+        if rc != 0:
+            raise RuntimeError()
+
+#########################################################################################
+
+
+@Composition(Compile, 'compile')
+@Composition(CustomBuild, 'custombuild')
+@Composition(Reference, 'reference')
+@Composition(ProjectReference, 'projectreference')
+@Composition(Content, 'content')
+@Composition(Image, 'image')
+@Composition(NoneTask, 'none')
+class CSItemGroup(ItemGroup):
+    def __init__(self):
+        super(CSItemGroup, self).__init__()
+
+
+@Attribute('AppDesignerFolder', child=True)
+@Attribute('AssemblyName', child=True)
+@Attribute('BaseIntermediateOutputPath', child=True)
+@Attribute('BaseOutputPath', child=True)
+@Attribute('Configuration', child=True)
+@Attribute('DebugSymbols', child=True)
+@Attribute('DebugType', child=True)
+@Attribute('DefineConstants', child=True)
+@Attribute('ErrorReport', child=True)
+@Attribute('FileAlignment', child=True)
+@Attribute('IntermediateOutputPath', child=True)
+@Attribute('Optimize', child=True)
+@Attribute('OutputPath', child=True)
+@Attribute('OutputType', child=True)
+@Attribute('PlatformTarget', child=True)
+@Attribute('ProjectGuid', child=True)
+@Attribute('ReferencePath', child=True)
+@Attribute('RootNamespace', child=True)
+@Attribute('TargetFrameworkVersion', child=True)
+@Attribute('WarningLevel', child=True)
+class CSPropertyGroup(PropertyGroup):
+    def __init__(self):
+        super(CSPropertyGroup, self).__init__()
+
+
+class CSProject(Project):
+    def __init__(self, toolchain):
+        super(CSProject, self).__init__()
+        self.globals = CSPropertyGroup()    
+        self.append(Import(r'$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props'))
+        self.append(self.globals)
+        self.append(Import(r'$(MSBuildToolsPath)\Microsoft.CSharp.targets'))
+            
+    def create_item_group(self):
+        ig = CSItemGroup()
+        self.getroot().insert(-1, ig)
+        return ig
+        
+    def create_property_group(self):
+        cpg = CSPropertyGroup()
+        self.getroot().insert(-1, cpg)
+        return cpg
+
+
+class CSToolchain(Toolchain):
+    def __init__(self, name, platform=None, vcvars=VS14VCVars(target="x64", host="x64")):
+        super(CSToolchain, self).__init__(name)
+        self.vcvars = vcvars
+        self.config = 'Default'
+        self.platform = 'AnyCPU'
+        self.toolset = 'v140'
+        self.charset = None
+        self.subsystem = 'Console'
+        self.output = "output/{}".format(name)
+
+    def generate(self, project):
+        cs_project = CSProject(self)
+        cs_project.tools_version = self.vcvars['VisualStudioVersion']
+
+        cs_project.globals.projectguid = '{%s}' % project.uuid
+        cs_project.globals.appdesignerfolder = "Properties"
+        cs_project.globals.rootnamespace = project.name
+        cs_project.globals.assemblyname = project.name
+        cs_project.globals.targetframeworkversion = "v4.5"
+        cs_project.filealignment = "512" 
+
+        if isinstance(project, model.CSLibrary):
+            cs_project.globals.outputtype = 'Library'
+
+        if isinstance(project, model.CSExecutable):
+            cs_project.globals.outputtype = 'Exe'
+            libdeps = [dep for dep in project.dependencies if isinstance(dep, model.CSLibrary)]
+            if libdeps:
+                ig = cs_project.create_item_group()
+                for dep in libdeps:
+                    pr = ig.create_projectreference()
+                    pr.include = '{}.csproj'.format(dep.name)
+                    pr.name = dep.name
+                    pr.project = '{%s}' % dep.uuid
+                    cs_project.globals.referencepath += os.path.join(os.getcwd(), "{}/{}/bin".format(self.output, dep.name))
+                    self.generate(dep)
+                    
+
+        config = cs_project.create_property_group()
+        config.condition = " '$(Configuration)|$(Platform)' == '{}|{}' ".format(self.config, self.platform)
+        config.platformtarget = self.platform
+        config.debugsymbols = "true"
+        config.debugtype = "full"
+        config.optimize = "true"
+        config.errorreport = "prompt"
+        config.outputpath = "{}/{}/bin".format(self.output, project.name)
+        config.intermediateoutputpath = "{}/{}/obj".format(self.output, project.name)
+
+        self.apply_features(project, cs_project)
+
+        groups = project.source_groups + [project]
+        for group in groups:
+            tool_sources = {}
+            for source in group.sources:
+                if source.tool not in tool_sources:
+                    tool_sources[source.tool] = []
+                tool_sources[source.tool].append(source)
+            for tool_name in tool_sources:
+                tool = self.get_tool(tool_name)
+                if tool is None:
+                    raise RuntimeError()
+                tool.transform(cs_project, tool_sources[tool_name])
+
+        for feature in project.features:
+            if feature.matches(self.name):
+                feature = FeatureRegistry.find(feature.name)
+                feature.transform(project, cs_project)
+
+        cs_project.write('{}.csproj'.format(project.name))
+        return cs_project
+
+    def transform(self, project):
+        self.generate(project)        
+        rc, _ = utils.execute('MSBuild.exe {}.csproj /m  /p:Configuration={} /p:Platform={platform}'.format(
             project.name, self.config, platform=self.platform), self.vcvars)
         if rc != 0:
             raise RuntimeError()

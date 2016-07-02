@@ -151,7 +151,6 @@ class Command(Job):
 
     def execute(self):
         if self.completed: return
-        utils.print_locked(self.info)
         # utils.print_locked(self._cmdline)
         rc, stdout = utils.execute(self._cmdline, self._env)
         if rc != 0: raise RuntimeError('job failed: ' + self._cmdline)

@@ -221,7 +221,7 @@ def VCVars(version, target="x86", host="x86", store=False, sdkver='10.0'):
     _AppendEnv(env, 'INCLUDE', path.join(env['WindowsSdkDir'], r'include\winrt'))
     _AppendEnv(env, 'LIBPATH', path.join(env['WindowsSdkDir'], r'References\CommonConfiguration\Neutral'))
     _AppendEnv(env, 'LIBPATH', path.join(env['ExtensionSdkDir'], 'Microsoft.VCLibs', version, r'References\CommonConfiguration\neutral'))
-    _AppendEnv(env, 'LIB', path.join(env['WindowsSdkDir'], r'lib\winv6.3\um\{}'.format(target)))
+    _AppendEnvIfExists(env, 'LIB', path.join(env['WindowsSdkDir'], r'lib\winv6.3\um\{}'.format(target)))
 
     if env['UniversalCRTSdkDir']:
         try:

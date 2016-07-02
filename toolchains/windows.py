@@ -15,6 +15,24 @@ _win_x86_vs14_env = VS14VCVars(host="x64", target="x86")
 _win_x64_vs14_env = VS14VCVars(host="x64", target="x64")
 
 
+win_cs_vs12_msbuild = msbuild.CSToolchain("windows-msbuild-vs12", vcvars=_win_x86_vs12_env)
+win_cs_vs12_msbuild.add_tool('.cs', msvc.MSBuildCSCompiler())
+win_cs_vs12_msbuild.add_tool('.png', msvc.MSBuildImage())
+win_cs_vs12_msbuild.add_tool('.jpg', msvc.MSBuildImage())
+win_cs_vs12_msbuild.add_tool('.bmp', msvc.MSBuildImage())
+win_cs_vs12_msbuild.add_tool('.gif', msvc.MSBuildImage())
+win_cs_vs12_msbuild.add_tool('.content', msvc.MSBuildContent())
+
+
+win_cs_vs14_msbuild = msbuild.CSToolchain("windows-msbuild-vs14", vcvars=_win_x86_vs14_env)
+win_cs_vs14_msbuild.add_tool('.cs', msvc.MSBuildCSCompiler())
+win_cs_vs14_msbuild.add_tool('.png', msvc.MSBuildImage())
+win_cs_vs14_msbuild.add_tool('.jpg', msvc.MSBuildImage())
+win_cs_vs14_msbuild.add_tool('.bmp', msvc.MSBuildImage())
+win_cs_vs14_msbuild.add_tool('.gif', msvc.MSBuildImage())
+win_cs_vs14_msbuild.add_tool('.content', msvc.MSBuildContent())
+
+
 win_x86_vs12_msbuild = msbuild.CXXToolchain("windows-x86-msbuild-vs12", platform="Win32", vcvars=_win_x86_vs12_env)
 win_x86_vs12_msbuild.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
 win_x86_vs12_msbuild.add_tool('.cc', msvc.MSBuildCXXCompiler(cxx=True))

@@ -5,32 +5,76 @@ from build.transform import pybuild
 from os import path
 
 
+class MSBuildCSCompiler(Tool):
+    def transform(self, msproject, sources):
+        ig = msproject.create_item_group()
+        for source in sources:
+            ig.create_compile(source.path)
+        return ig
+
+
 class MSBuildCXXCompiler(Tool):
     def __init__(self, cxx=True):
         self.cxx = cxx
         
-    def transform(self, cxx_project, source):
-        cl = cxx_project.items_group.create_clcompile(source.path)
-        if not self.cxx:
-            cl.compileas = "CompileAsC"
-            cl.compileaswinrt = "false"
+    def transform(self, cxx_project, sources):
+        ig = cxx_project.create_item_group()
+        for source in sources:
+            cl = ig.create_clcompile(source.path)
+            if not self.cxx:
+                cl.compileas = "CompileAsC"
+                cl.compileaswinrt = "false"
+        return ig
 
 
 class MSBuildShaderCompiler(Tool):
-    def transform(self, cxx_project, source):
-        fx = cxx_project.items_group.create_fxcompile(source.path)
-        fx.shadertype = source.args['shadertype'].title()
-        fx.shadermodel = source.args['shadermodel']
-        
+    def transform(self, msproject, sources):
+        ig = msproject.create_item_group()
+        for source in sources:
+            fx = ig.create_fxcompile(source.path)
+            fx.shadertype = source.args['shadertype'].title()
+            fx.shadermodel = source.args['shadermodel']
+        return ig
+
 
 class MSBuildImage(Tool):
-    def transform(self, cxx_project, source):
-        img = cxx_project.items_group.create_image(source.path)
+    def transform(self, msproject, sources):
+        ig = msproject.create_item_group()
+        for source in sources:
+            img = ig.create_image(source.path)
+        return ig
+
+
+class MSBuildMedia(Tool):
+    def transform(self, msproject, sources):
+        ig = msproject.create_item_group()
+        for source in sources:
+            img = ig.create_media(source.path)
+        return ig
+
+
+class MSBuildNoneTask(Tool):
+    def transform(self, msproject, sources):
+        ig = msproject.create_item_group()
+        for source in sources:
+            img = ig.create_nonetask(source.path)
+        return ig
+
+
+class MSBuildContent(Tool):
+    def transform(self, msproject, sources):
+        ig = msproject.create_item_group()
+        for source in sources:
+            img = ig.create_content(source.path)
+        return ig
 
 
 class MSBuildAppxManifest(Tool):
-    def transform(self, cxx_project, source):
-        appx = cxx_project.items_group.create_appxmanifest(source.path)
+    def transform(self, msproject, sources):
+        ig = msproject.create_item_group()
+        for source in sources:
+            appx = ig.create_appxmanifest(source.path)
+        return ig
 
 
 class PyBuildCXXCompiler(Tool):

@@ -15,12 +15,12 @@ def PlatformToolset(platform='Win32', toolset='v140', charset='MultiByte'):
 def StoreApp(revision='10.0', platform_revision=None):
     class _StoreApp:
         def transform(self, project, cxx_project):
-            cxx_project.config_props.applicationtype = "Windows Store"
-            cxx_project.config_props.applicationtyperevision = revision
-            cxx_project.config_props.appcontainerapplication = "true"
+            cxx_project.globals_group.applicationtype = "Windows Store"
+            cxx_project.globals_group.applicationtyperevision = revision
+            cxx_project.globals_group.appcontainerapplication = "true"
             if platform_revision:
-                cxx_project.config_props.windowstargetplatformversion = platform_revision
-                cxx_project.config_props.windowstargetplatformminversion = platform_revision
+                cxx_project.globals_group.windowstargetplatformversion = platform_revision
+                cxx_project.globals_group.windowstargetplatformminversion = platform_revision
     return _StoreApp()
 
 
@@ -38,6 +38,8 @@ winstore_x86_vs12.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
 winstore_x86_vs12.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
 winstore_x86_vs12.add_tool('.hlsl', msvc.MSBuildShaderCompiler())
 winstore_x86_vs12.add_tool('.png', msvc.MSBuildImage())
+winstore_x86_vs12.add_tool('.dds', msvc.MSBuildImage())
+winstore_x86_vs12.add_tool('.wav', msvc.MSBuildMedia())
 winstore_x86_vs12.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
 winstore_x86_vs12.add_feature(PlatformToolset(toolset='v120'))
 winstore_x86_vs12.add_feature(StoreApp(revision='8.1'))
@@ -51,6 +53,8 @@ winstore_arm_vs12.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
 winstore_arm_vs12.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
 winstore_arm_vs12.add_tool('.hlsl', msvc.MSBuildShaderCompiler())
 winstore_arm_vs12.add_tool('.png', msvc.MSBuildImage())
+winstore_arm_vs12.add_tool('.dds', msvc.MSBuildImage())
+winstore_arm_vs12.add_tool('.wav', msvc.MSBuildMedia())
 winstore_arm_vs12.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
 winstore_arm_vs12.add_feature(PlatformToolset(toolset='v120'))
 winstore_arm_vs12.add_feature(StoreApp(revision='8.1'))
@@ -64,6 +68,8 @@ winstore_x86_vs14.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
 winstore_x86_vs14.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
 winstore_x86_vs14.add_tool('.hlsl', msvc.MSBuildShaderCompiler())
 winstore_x86_vs14.add_tool('.png', msvc.MSBuildImage())
+winstore_x86_vs14.add_tool('.dds', msvc.MSBuildImage())
+winstore_x86_vs14.add_tool('.wav', msvc.MSBuildMedia())
 winstore_x86_vs14.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
 winstore_x86_vs14.add_feature(PlatformToolset(toolset='v140', charset=None))
 winstore_x86_vs14.add_feature(StoreApp(revision='10.0', platform_revision='10.0.10586.0'))
@@ -76,6 +82,8 @@ winstore_arm_vs14.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
 winstore_arm_vs14.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
 winstore_arm_vs14.add_tool('.hlsl', msvc.MSBuildShaderCompiler())
 winstore_arm_vs14.add_tool('.png', msvc.MSBuildImage())
+winstore_arm_vs14.add_tool('.dds', msvc.MSBuildImage())
+winstore_arm_vs14.add_tool('.wav', msvc.MSBuildMedia())
 winstore_arm_vs14.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
 winstore_arm_vs14.add_feature(PlatformToolset(toolset='v140', charset=None))
 winstore_arm_vs14.add_feature(StoreApp(revision='10.0', platform_revision='10.0.10586.0'))

@@ -33,15 +33,13 @@ class Thread(threading.Thread):
 		self.output = output
 
 	def run(self):
-		# print('Thread {} started'.format(self.index))
 		while True:
 			job = self.input.get()
 			if not job:
-				# print('Thread {} stopping'.format(self.index))
 				return
 			try:
-				#print_locked('{} {} {}', job.product, job.required, job.timestamp)
-				if job.required:
+				if job.required and not job.completed:
+					print_locked('[{}]{}', self.index, job.info)
 					job.execute()
 				self.output.put(job)
 			except Exception as e:

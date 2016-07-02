@@ -76,12 +76,12 @@ class Feature(_Filtered):
 
 class ProjectRegistry(object):
     _projects = {}
-    
+
     @staticmethod
     def add(project):
         # print("Registering project: {}".format(project.name))
         ProjectRegistry._projects[project.name] = project
-        
+
     @staticmethod
     def find(project):
         if project not in ProjectRegistry._projects:
@@ -102,22 +102,49 @@ class Project(SourceGroup):
         self.uuid = str(uuid.uuid4())
         ProjectRegistry.add(self)
 
+    def create_group(self, name):
+        group = SourceGroup(name)
+        self.source_groups.append(group)
+        return group
+
     def add_source_group(self, group):
         self.source_groups.append(group)
-        
+        return group
+
     @property
     def source_groups(self):
         return self._source_groups
-        
+
     def add_feature(self, feature_name, filter=None):
         self._features.append(Feature(feature_name, filter))
 
     @property
     def features(self):
         return self._features
-        
+
     def transform(self, toolchain):
         toolchain.transform(self)
+
+
+class CSProject(Project):
+    def __init__(self, name):
+        super(CSProject, self).__init__(name)
+        self.dependencies = []
+
+    def add_dependency(self, project, filter=None, publish=None):
+        for dep in project.dependencies:
+            self.dependencies.append(dep)
+        self.dependencies.append(project) 
+
+
+class CSLibrary(CSProject):
+    def __init__(self, name):
+        super(CSLibrary, self).__init__(name)
+
+
+class CSExecutable(CSProject):
+    def __init__(self, name):
+        super(CSExecutable, self).__init__(name)
 
 
 class CXXProject(Project):
