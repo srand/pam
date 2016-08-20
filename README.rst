@@ -7,7 +7,8 @@ PAM is a powerful build tool capable of building C/C++ and C# projects, either n
 Example Project
 ---------------
 
-A simple Hello World project may look like this::
+A simple Hello World project may look like this: 
+::
   from build.model import CXXExecutable
 
   # Create a new C++ executable project
@@ -20,10 +21,12 @@ A simple Hello World project may look like this::
   hello.add_toolchain('windows-x64-msbuild-vs14')  # Build for Windows using MSBuild and VS 2015
   hello.add_toolchain('linux-x64-pybuild-gcc')  # Build for Linux using internal build engine and GCC
 
+
 Building
 ---------
-To build the project above, invoke the tool and provide the project name::  
+To build the project above, invoke the tool and provide the project name 
+::
   $ pam hello_world
 
 By default, PAM will load projects from a file called pam.py, 
-but you can of course specify a different filename by using the -f flag. 
+but you can of course specify a different filename by using the -f flag.
