@@ -21,6 +21,19 @@ class _FilteredAndPublished(_Filtered):
         self.publish = publish
 
 
+class Toolchain(object):
+    def __init__(self, name):
+        self.name = name
+
+
+class ToolchainGroup(object):
+    def __init__(self):
+        self.toolchains = []
+
+    def add_toolchain(self, toolchain):
+        self.toolchains.append(toolchain)
+
+
 class Source(_Filtered):
     def __init__(self, path, filter=None, tool=None, args=None):
         super(Source, self).__init__(filter)
@@ -97,10 +110,21 @@ class ProjectLoader(Loader):
 class Project(SourceGroup):
     def __init__(self, name):
         super(Project, self).__init__(name)
+        self._toolchain_groups = [ToolchainGroup()]
         self._source_groups = []
         self._features = []        
         self.uuid = str(uuid.uuid4())
         ProjectRegistry.add(self)
+
+    def add_toolchain_group(self, toolchain_group):
+        self._toolchain_groups.append(toolchain_group)
+
+    def add_toolchain(self, toolchain):
+        self._toolchain_groups[0].add_toolchain(toolchain)
+
+    @property
+    def toolchains(self):
+        return [toolchain for group in self._toolchain_groups for toolchain in group.toolchains]
 
     def create_group(self, name):
         group = SourceGroup(name)

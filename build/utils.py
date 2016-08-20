@@ -10,13 +10,20 @@ class Loader(object):
         sys.modules[self.package] = imp.new_module(self.package)
 
     def load(self):
+        if os.path.isfile(self.path):
+            self.load_file(self.path)
+            return
         for root, dirs, files in os.walk(self.path):
             for file in files:
-                base, ext = os.path.splitext(file)
-                if ext == ".py":
-                    fullpath = os.path.join(root, file)
-                    with open(fullpath) as fd:
-                        imp.load_module("{}.{}".format(self.package, base), fd, fullpath, ('.py', 'r', imp.PY_SOURCE))
+                fullpath = os.path.join(root, file)
+                self.load_file(fullpath)
+
+    def load_file(self, path):
+        file = os.path.basename(path)
+        base, ext = os.path.splitext(file)
+        if ext == ".py":
+            with open(path) as fd:
+                imp.load_module("{}.{}".format(self.package, base), fd, path, ('.py', 'r', imp.PY_SOURCE))
 
 
 class Dispatch(object):
