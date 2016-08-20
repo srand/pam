@@ -5,6 +5,8 @@ from build.model import ToolchainGroup
 toolchains = ToolchainGroup()
 toolchains.add_toolchain('windows-x86-msbuild-vs14')
 toolchains.add_toolchain('windows-x64-msbuild-vs14')
+toolchains.add_toolchain('windows-x86-pybuild-vs14')
+toolchains.add_toolchain('windows-x64-pybuild-vs14')
 
 zlib = CXXLibrary('zlib')
 zlib.add_sources('tests/zlib', r'.*\.c$')
