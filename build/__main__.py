@@ -20,7 +20,16 @@ def exit(msg):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Python build')
+    help = '''  PAM - The Python build engine
+
+available toolchains:
+'''
+
+    sorted_toolchains = set()
+    for toolchain_name in sorted([t.name for t in ToolchainRegistry.all()]):
+        help += '  {}\n'.format(toolchain_name)
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=help)
     parser.add_argument('project', nargs='+', help='name of project to build')
     parser.add_argument('-f', '--file', default='pam.py', help='project file to load (default: pam.py)')
     parser.add_argument('-t', '--toolchain', help='toolchain to use (default: all supported)')
