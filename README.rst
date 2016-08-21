@@ -125,6 +125,13 @@ The following builting toolchains are available:
 Frequently Asked Questions
 --------------------------
 
+Q: How do I install it?
+````````````````````````
+Use pip:
+::
+  $ pip install -e git+https://rand_r@bitbucket.org/rand_r/build.git#egg=Package
+
+
 Q: How do I add a custom compiler flag to a project?
 ````````````````````````````````````````````````````
 
