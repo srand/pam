@@ -36,7 +36,8 @@ Let's get real and have a closer look at the project API and what PAM is capable
 ::
   from build.model import CXXLibrary, CXXExecutable, ToolchainGroup
 
-  # A toolchain group is a convenient way of using the same set of toolchains in multiple projects.
+  # A toolchain group is a convenient way of using the same set of 
+  # toolchains in multiple projects.
   toolchains = ToolchainGroup()
   toolchains.add_toolchain('linux-x64-pam-gcc)
   toolchains.add_toolchain('macosx-x64-pam-gcc)
@@ -45,10 +46,11 @@ Let's get real and have a closer look at the project API and what PAM is capable
   # Let's build a very commonly used library, zlib. 
   zlib = CXXLibrary('zlib')
 
-  # We add sources to the project by collecting all .c files from the zlib directory.
-  # Sources are automatically paired with matching tools through their file extensions. 
-  # If an unconventional file extension is used, a tool may be selected explicitly
-  # with the tool attribute. For example, to build as C++ use: tool='.cpp' 
+  # We add sources to the project by collecting all .c files from the zlib 
+  # directory. Sources are automatically paired with matching tools through 
+  # their file extensions. If an unconventional file extension is used, a tool 
+  # may be selected explicitly with the tool attribute. For example, to build 
+  # C code as C++, add: tool='.cpp'
   zlib.add_sources('zlib', r'.*\.c')
 
   # Next we add an include path so that the library's headers can be found. 
@@ -60,11 +62,11 @@ Let's get real and have a closer look at the project API and what PAM is capable
   # The library also needs a few macros set depending on the target operating 
   # system. We can selectively set macros using the filter attribute. A filter 
   # is basically a regex matched against the name of the toolchain used. 
-  # For example, if building with windows-x64-msbuild-vs14, only the first macro 
-  # would be set because only 'windows' matches the toolchain name.
-  # Filters can also be used when adding sources, include paths and other items. 
-  # We can also publish these macros to dependent projects by setting the publish 
-  # attribute, but in this case there is no need to.
+  # For example, if building with windows-x64-msbuild-vs14, only the first 
+  # macro would be set because only 'windows' matches the toolchain name.
+  # Filters can also be used when adding sources, include paths and other 
+  # items. We can also publish these macros to dependent projects by setting 
+  # the publish attribute, but in this case there is no need to.
   zlib.add_macro('WINDOWS', filter='windows')
   zlib.add_macro('LINUX', filter='linux')
   zlib.add_macro('DARWIN', filter='macosx)
@@ -73,7 +75,8 @@ Let's get real and have a closer look at the project API and what PAM is capable
   zlib.add_toolchain_group(toolchains)
 
 
-  # Let's utilize the zlib library by building the zpipe example found in the tarball.
+  # Let's utilize the zlib library by building the zpipe example found in 
+  # the zlib tarball.
   zpipe = CXXExecutable('zpipe')
 
   # Add sources
