@@ -46,6 +46,7 @@ class Toolchain(object):
         super(Toolchain, self).__init__()
         self._tools = {}
         self._features = []
+        self._requirements = []
         self.name = name
         self.attributes = ToolchainAttributes(self)
         ToolchainRegistry.add(self)
@@ -64,6 +65,13 @@ class Toolchain(object):
         if extension not in self._tools:
             raise RuntimeError('could not find tool for extension {}'.format(extension))
         return self._tools[extension]
+
+    def add_requirement(self, req):
+        self._requirements.append(req)
+
+    @property
+    def supported(self):
+        return all([req.satisfied for req in self._requirements])
 
     def transform(self, project):
         pass

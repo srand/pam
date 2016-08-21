@@ -44,28 +44,60 @@ def _GetWindowsSdkDir(sdkver):
 
     
 def _GetExtensionSdkDir(env, sdkver):
-    manifest = "Microsoft SDKs\Windows\v{}\ExtensionSDKs\Microsoft.VCLibs\14.0\SDKManifest.xml".format(sdkver)
-    if env.get("ProgramFiles") and path.exists(path.join(env["ProgramFiles"], manifest)):
-        return path.join(env["ProgramFiles"], 'Microsoft SDKs\Windows\v{}\ExtensionSDKs'.format(sdkver))
-    if env.get("ProgramFiles(x86)") and path.exists(path.join(env["ProgramFiles(x86)"], manifest)):
-        return path.join(env["ProgramFiles(x86)"], 'Microsoft SDKs\Windows\v{}\ExtensionSDKs'.format(sdkver))
+    manifest = r"Microsoft SDKs\Windows\v{}A\ExtensionSDKs\Microsoft.VCLibs\14.0\SDKManifest.xml".format(sdkver)
+    if env.get("PROGRAMFILES") and path.exists(path.join(env["PROGRAMFILES"], manifest)):
+        return path.join(env["PROGRAMFILES"], 'Microsoft SDKs\Windows\v{}A\ExtensionSDKs'.format(sdkver))
+    if env.get("PROGRAMFILES(X86)") and path.exists(path.join(env["PROGRAMFILES(X86)"], manifest)):
+        return path.join(env["PROGRAMFILES(X86)"], 'Microsoft SDKs\Windows\v{}A\ExtensionSDKs'.format(sdkver))
+    manifest = r"Microsoft SDKs\Windows Kits\10\ExtensionSDKs\Microsoft.VCLibs\14.0\SDKManifest.xml"
+    if env.get("PROGRAMFILES") and path.exists(path.join(env["PROGRAMFILES"], manifest)):
+        return path.join(env["PROGRAMFILES"], r'Microsoft SDKs\Windows Kits\10\ExtensionSDKs')
+    if env.get("PROGRAMFILES(X86)") and path.exists(path.join(env["PROGRAMFILES(X86)"], manifest)):
+        return path.join(env["PROGRAMFILES(X86)"], r'Microsoft SDKs\Windows Kits\10\ExtensionSDKs')
     return ''
 
 
 def _GetWindowsSdkExecutablePath32(sdkver):
     return _ReadKeys([
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1\WinSDK-NetFx40Tools-x86', 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1\WinSDK-NetFx40Tools-x86', 'InstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6\WinSDK-NetFx40Tools-x86', 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6\WinSDK-NetFx40Tools-x86', 'InstallationFolder'),
         (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools'.format(sdkver), 'InstallationFolder'),
         (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools'.format(sdkver), 'InstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1\WinSDK-NetFx40Tools-x86', 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1\WinSDK-NetFx40Tools-x86', 'InstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6\WinSDK-NetFx40Tools-x86', 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6\WinSDK-NetFx40Tools-x86', 'InstallationFolder'),
         (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools'.format(sdkver), 'InstallationFolder'),
         (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools'.format(sdkver), 'InstallationFolder')])
 
 
 def _GetWindowsSdkExecutablePath64(sdkver):
     return _ReadKeys([
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
         (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools-x64'.format(sdkver), 'InstallationFolder'),
         (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools-x64'.format(sdkver), 'InstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6\WinSDK-NetFx40Tools-x64', 'InstallationFolder'),
         (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools-x64'.format(sdkver), 'InstallationFolder'),
         (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows\v{}A\WinSDK-NetFx40Tools-x64'.format(sdkver), 'InstallationFolder')])
+
+def _GetNETFXSDKDir(sdkver):
+    return _ReadKeys([
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1', 'KitsInstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1', 'KitsInstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6', 'KitsInstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Microsoft\Microsoft SDKs\NETFXSDK\4.6', 'KitsInstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1', 'KitsInstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6.1', 'KitsInstallationFolder'),
+        (HKEY_LOCAL_MACHINE, r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6', 'KitsInstallationFolder'),
+        (HKEY_CURRENT_USER,  r'SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.6', 'KitsInstallationFolder')])
 
 
 def _GetVSInstallDir(version):
@@ -150,13 +182,14 @@ def VCVars(version, target="x86", host="x86", store=False, sdkver='10.0'):
     for key in environ:
         env[key] = environ.get(key)
     
-    env['VS140COMNTOOLS'] = _GetVSCommonToolsDir(version)
+    env['VS140COMNTOOLS'] = _GetVSCommonToolsDir(version) + 'Common7\\Tools\\'
     env['Framework40Version'] = 'v4.0'
     env['VisualStudioVersion'] = version
     env['WindowsSdkDir'] = _GetWindowsSdkDir(sdkver) 
     env['ExtensionSdkDir'] = _GetExtensionSdkDir(env, sdkver)
     env['WindowsSDK_ExecutablePath_x86'] = _GetWindowsSdkExecutablePath32(sdkver)
     env['WindowsSDK_ExecutablePath_x64'] = _GetWindowsSdkExecutablePath64(sdkver)
+    env['NETFXSDKDir'] = _GetNETFXSDKDir(sdkver)
     env['VSINSTALLDIR'] = _GetVSInstallDir(version)
     env['VCINSTALLDIR'] = _GetVCInstallDir(version)
     env['FSHARPINSTALLDIR'] = _GetFSharpInstallDir()
@@ -166,6 +199,9 @@ def VCVars(version, target="x86", host="x86", store=False, sdkver='10.0'):
     env['FrameworkDir32'] = _GetFrameworkDir32()
     env['FrameworkDir64'] = _GetFrameworkDir64()
     env['Platform'] = target.upper()
+    env['INCLUDE'] = ''
+    env['LIB'] = ''
+    env['LIBPATH'] = ''
 
     if host == "x86":
         env['FrameworkDir'] = env['FrameworkDir32']
@@ -180,7 +216,7 @@ def VCVars(version, target="x86", host="x86", store=False, sdkver='10.0'):
         _AppendEnv(env, 'PATH', path.join(env['WindowsSdkDir'], r'bin\x86'))
         _AppendEnv(env, 'PATH', path.join(env['WindowsSdkDir'], r'bin\x64'))
                 
-    env['DevEnvDir'] = path.join(env['VSINSTALLDIR'], r'Common7\IDE\\')        
+    env['DevEnvDir'] = path.join(env['VSINSTALLDIR'], 'Common7\\IDE\\')        
     _AppendEnvIfExists(env, 'PATH', path.join(env['VSINSTALLDIR'], r'Team Tools\Performance Tools'))
     if host == "x64":
         _AppendEnvIfExists(env, 'PATH', path.join(env['VSINSTALLDIR'], r'Team Tools\Performance Tools\x64'))
@@ -216,17 +252,24 @@ def VCVars(version, target="x86", host="x86", store=False, sdkver='10.0'):
     _AppendEnvIfExists(env, 'PATH', path.join(env['FSHARPINSTALLDIR']))
     _AppendEnvIfExists(env, 'PATH', path.join(env['DevEnvDir'], r'CommonExtensions\Microsoft\TestWindow'))
 
-    _AppendEnv(env, 'INCLUDE', path.join(env['WindowsSdkDir'], r'include\shared'))
-    _AppendEnv(env, 'INCLUDE', path.join(env['WindowsSdkDir'], r'include\um'))
-    _AppendEnv(env, 'INCLUDE', path.join(env['WindowsSdkDir'], r'include\winrt'))
-    _AppendEnv(env, 'LIBPATH', path.join(env['WindowsSdkDir'], r'References\CommonConfiguration\Neutral'))
+    #_AppendEnv(env, 'INCLUDE', path.join(env['WindowsSdkDir'], r'include\winrt'))
+    #_AppendEnv(env, 'INCLUDE', path.join(env['WindowsSdkDir'], r'include\um'))
+    #_AppendEnv(env, 'INCLUDE', path.join(env['WindowsSdkDir'], r'include\shared'))
     _AppendEnv(env, 'LIBPATH', path.join(env['ExtensionSdkDir'], 'Microsoft.VCLibs', version, r'References\CommonConfiguration\neutral'))
+    _AppendEnv(env, 'LIBPATH', path.join(env['WindowsSdkDir'], r'References'))
+    _AppendEnv(env, 'LIBPATH', path.join(env['WindowsSdkDir'], r'UnionMetadata'))
     _AppendEnvIfExists(env, 'LIB', path.join(env['WindowsSdkDir'], r'lib\winv6.3\um\{}'.format(target)))
 
     if env['UniversalCRTSdkDir']:
         try:
             sdkver = listdir(path.join(env['UniversalCRTSdkDir'], 'include'))[-1]
+            _AppendEnv(env, 'INCLUDE', path.join(env['UniversalCRTSdkDir'], r'include\{}\winrt'.format(sdkver)))
+            _AppendEnv(env, 'INCLUDE', path.join(env['UniversalCRTSdkDir'], r'include\{}\um'.format(sdkver)))
+            _AppendEnv(env, 'INCLUDE', path.join(env['UniversalCRTSdkDir'], r'include\{}\shared'.format(sdkver)))
+            _AppendEnv(env, 'INCLUDE', path.join(env['NETFXSDKDir'], r'include\um'))
             _AppendEnv(env, 'INCLUDE', path.join(env['UniversalCRTSdkDir'], r'include\{}\ucrt'.format(sdkver)))
+            _AppendEnv(env, 'LIB', path.join(env['UniversalCRTSdkDir'], r'lib\{}\um\{}'.format(sdkver, target)))
+            _AppendEnv(env, 'LIB', path.join(env['NETFXSDKDir'], r'lib\um\{}'.format(target)))
             _AppendEnv(env, 'LIB', path.join(env['UniversalCRTSdkDir'], r'lib\{}\ucrt\{}'.format(sdkver, target)))
         except:
             pass
@@ -265,9 +308,24 @@ def VCVars(version, target="x86", host="x86", store=False, sdkver='10.0'):
     return env
 
 
+def diff(a, b):
+    for key in b:
+        if key not in a:
+            print('{} not found = '.format(key, b[key]))
+            continue
+        if a[key] != b[key]:
+            print('{} = {}'.format(key, a[key]))
+            print('{} = {}'.format(key, b[key]))
+
+
 def VS12VCVars(*args, **kwargs):
-   return VCVars('12.0', *args, **kwargs) 
+    vars = VCVars('12.0', *args, **kwargs)
+    # diff(environ, vars)
+    return vars  
     
 
 def VS14VCVars(*args, **kwargs):
-   return VCVars('14.0', *args, **kwargs) 
+    vars = VCVars('14.0', *args, **kwargs)
+    # if kwargs['target'] == 'x86' and not kwargs.get('store'):
+    #     diff(environ, vars)
+    return vars  

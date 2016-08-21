@@ -1,6 +1,7 @@
 from build.transform import msbuild 
 from build.transform.visual_studio import VS12VCVars, VS14VCVars
 from build.tools import msvc
+from build.requirement import HostRequirement
 
 
 def PlatformToolset(platform='Win32', toolset='v140', charset='MultiByte'):
@@ -44,6 +45,7 @@ winstore_x86_vs12.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
 winstore_x86_vs12.add_feature(PlatformToolset(toolset='v120'))
 winstore_x86_vs12.add_feature(StoreApp(revision='8.1'))
 winstore_x86_vs12.add_feature(NoPrecompiledHeader())
+winstore_x86_vs12.add_requirement(HostRequirement.WINDOWS)
 
 
 winstore_arm_vs12 = msbuild.CXXToolchain("windows-store-arm-msbuild-vs12", platform='ARM', vcvars=VS12VCVars(host="x64", target="arm", store=True, sdkver='8.1'))
@@ -59,6 +61,7 @@ winstore_arm_vs12.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
 winstore_arm_vs12.add_feature(PlatformToolset(toolset='v120'))
 winstore_arm_vs12.add_feature(StoreApp(revision='8.1'))
 winstore_arm_vs12.add_feature(NoPrecompiledHeader())
+winstore_arm_vs12.add_requirement(HostRequirement.WINDOWS)
 
 
 winstore_x86_vs14 = msbuild.CXXToolchain("windows-store-x86-msbuild-vs14", vcvars=VS14VCVars(host="x64", target="x86", store=True))
@@ -74,6 +77,8 @@ winstore_x86_vs14.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
 winstore_x86_vs14.add_feature(PlatformToolset(toolset='v140', charset=None))
 winstore_x86_vs14.add_feature(StoreApp(revision='10.0', platform_revision='10.0.10586.0'))
 winstore_x86_vs14.add_feature(NoPrecompiledHeader())
+winstore_x86_vs14.add_requirement(HostRequirement.WINDOWS)
+
 
 winstore_arm_vs14 = msbuild.CXXToolchain("windows-store-arm-msbuild-vs14", platform='ARM', vcvars=VS14VCVars(host="x64", target="arm", store=True))
 winstore_arm_vs14.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
@@ -88,3 +93,4 @@ winstore_arm_vs14.add_tool('.appxmanifest', msvc.MSBuildAppxManifest())
 winstore_arm_vs14.add_feature(PlatformToolset(toolset='v140', charset=None))
 winstore_arm_vs14.add_feature(StoreApp(revision='10.0', platform_revision='10.0.10586.0'))
 winstore_arm_vs14.add_feature(NoPrecompiledHeader())
+winstore_arm_vs14.add_requirement(HostRequirement.WINDOWS)

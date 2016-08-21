@@ -39,8 +39,8 @@ Let's get real and have a closer look at the project API and what PAM is capable
   # A toolchain group is a convenient way of using the same set of 
   # toolchains in multiple projects.
   toolchains = ToolchainGroup()
-  toolchains.add_toolchain('linux-x64-pam-gcc)
-  toolchains.add_toolchain('macosx-x64-pam-gcc)
+  toolchains.add_toolchain('linux-x64-pam-gcc')
+  toolchains.add_toolchain('macosx-x64-pam-gcc')
   toolchains.add_toolchain('windows-x64-msbuild-vs14')
   
   # Let's build a very commonly used library, zlib. 
@@ -51,7 +51,7 @@ Let's get real and have a closer look at the project API and what PAM is capable
   # their file extensions. If an unconventional file extension is used, a tool 
   # may be selected explicitly with the tool attribute. For example, to build 
   # C code as C++, add: tool='.cpp'
-  zlib.add_sources('zlib', r'.*\.c')
+  zlib.add_sources('zlib', r'.*\.c$')
 
   # Next we add an include path so that the library's headers can be found. 
   # When the publish attribute is set to true, the path will be inherited by 
@@ -69,7 +69,7 @@ Let's get real and have a closer look at the project API and what PAM is capable
   # the publish attribute, but in this case there is no need to.
   zlib.add_macro('WINDOWS', filter='windows')
   zlib.add_macro('LINUX', filter='linux')
-  zlib.add_macro('DARWIN', filter='macosx)
+  zlib.add_macro('DARWIN', filter='macosx')
 
   # Add the set of toolchains we want to use to build the library.
   zlib.add_toolchain_group(toolchains)

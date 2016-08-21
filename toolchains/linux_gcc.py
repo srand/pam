@@ -1,8 +1,9 @@
 from build.transform.pybuild import CXXToolchain
 from build.tools.gnu import PyBuildCXXCompiler, PyBuildCXXArchiver, PyBuildCXXLinker
 from build.features.gnu import PyBuildWordsize
+from build.requirement import HostRequirement 
 
-linux = CXXToolchain("linux-pybuild-gcc")
+linux = CXXToolchain("linux-pam-gcc")
 linux.add_tool('.S', PyBuildCXXCompiler(cxx=False))
 linux.add_tool('.c', PyBuildCXXCompiler(cxx=False))
 linux.add_tool('.cc', PyBuildCXXCompiler(cxx=True))
@@ -10,8 +11,9 @@ linux.add_tool('.cpp', PyBuildCXXCompiler(cxx=True))
 linux.add_tool('.cxx', PyBuildCXXCompiler(cxx=True))
 linux.archiver = PyBuildCXXArchiver()
 linux.linker = PyBuildCXXLinker()
+linux.add_requirement(HostRequirement.LINUX)
 
-linux_x86 = CXXToolchain("linux-x86-pybuild-gcc")
+linux_x86 = CXXToolchain("linux-x86-pam-gcc")
 linux_x86.add_tool('.S', PyBuildCXXCompiler(cxx=False))
 linux_x86.add_tool('.c', PyBuildCXXCompiler(cxx=False))
 linux_x86.add_tool('.cc', PyBuildCXXCompiler(cxx=True))
@@ -20,8 +22,9 @@ linux_x86.add_tool('.cxx', PyBuildCXXCompiler(cxx=True))
 linux_x86.archiver = PyBuildCXXArchiver()
 linux_x86.linker = PyBuildCXXLinker()
 linux_x86.add_feature(PyBuildWordsize(32))
+linux_x86.add_requirement(HostRequirement.LINUX)
 
-linux_x64 = CXXToolchain("linux-x64-pybuild-gcc")
+linux_x64 = CXXToolchain("linux-x64-pam-gcc")
 linux_x64.add_tool('.S', PyBuildCXXCompiler(cxx=False))
 linux_x64.add_tool('.c', PyBuildCXXCompiler(cxx=False))
 linux_x64.add_tool('.cc', PyBuildCXXCompiler(cxx=True))
@@ -30,8 +33,9 @@ linux_x64.add_tool('.cxx', PyBuildCXXCompiler(cxx=True))
 linux_x64.archiver = PyBuildCXXArchiver()
 linux_x64.linker = PyBuildCXXLinker()
 linux_x64.add_feature(PyBuildWordsize(64))
+linux_x64.add_requirement(HostRequirement.LINUX)
 
-linux_arm = CXXToolchain("linux-arm-pybuild-gcc")
+linux_arm = CXXToolchain("linux-arm-pam-gcc")
 linux_arm.add_tool('.S', PyBuildCXXCompiler(cxx=False))
 linux_arm.add_tool('.c', PyBuildCXXCompiler(cxx=False))
 linux_arm.add_tool('.cc', PyBuildCXXCompiler(cxx=True))
@@ -39,3 +43,4 @@ linux_arm.add_tool('.cpp', PyBuildCXXCompiler(cxx=True))
 linux_arm.add_tool('.cxx', PyBuildCXXCompiler(cxx=True))
 linux_arm.archiver = PyBuildCXXArchiver()
 linux_arm.linker = PyBuildCXXLinker()
+linux_arm.add_requirement(HostRequirement.LINUX)

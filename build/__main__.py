@@ -39,9 +39,7 @@ available toolchains:
         exit('file not found: {}'.format(args.file))
 
     if args.toolchain:
-        try:
-            ToolchainRegistry.find(args.toolchain)
-        except ValueError as e:
+        if not any([re.search(args.toolchain, t.name) for t in ToolchainRegistry.all()]):
             exit("unrecognized toolchain '{}'".format(args.toolchain))
     else:
         args.toolchain = r'.*'
@@ -65,11 +63,16 @@ available toolchains:
                         build(dependency)
                 if not re.search(args.toolchain, toolchain_name):
                     continue
+                print('===== Building %s with %s' % (project.name, toolchain_name))
                 try:
                     toolchain = ToolchainRegistry.find(toolchain_name)
+                    if not toolchain.supported:
+                        print('warning: toolchain not supported\n')
+                        continue
                 except ValueError as e:
                     exit("unrecognized toolchain '{}'".format(toolchain_name))
                 project.transform(toolchain)
+                print('\n')
         if project not in completed:
             build(project)
 

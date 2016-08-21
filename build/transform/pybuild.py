@@ -165,6 +165,7 @@ class Object(Command):
 class CXXToolchain(Toolchain):
     def __init__(self, name):
         super(CXXToolchain, self).__init__(name)
+        self.output = path.join("output", name)
         self._tools = {}
         self._cxx_archiver = None
         self._cxx_linker = None
@@ -210,7 +211,7 @@ class CXXToolchain(Toolchain):
         for incpath in incpaths:
             cxx_project.add_incpath(incpath.path)    
         for libpath in libpaths:
-            cxx_project.add_libpath(libpath.path)    
+            cxx_project.add_libpath(libpath.path)
 
         for dep in project.dependencies:
             if isinstance(dep, model.CXXLibrary):
