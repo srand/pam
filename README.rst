@@ -97,7 +97,7 @@ PAM will automatically only use toolchains which are supported on the current ho
 
 Toolchains
 ----------
-The following builting toolchains are available:
+The following builtin toolchains are available:
 
 - linux-pam-gcc
 - linux-arm-pam-gcc
