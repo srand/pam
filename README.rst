@@ -121,3 +121,37 @@ The following builting toolchains are available:
 - windows-x86-pam-clang-vs14
 - windows-x86-pam-vs12
 - windows-x86-pam-vs14
+
+Frequently Asked Questions
+--------------------------
+
+Q: How do I add a custom compiler flag to a project?
+````````````````````````````````````````````````````
+
+You don't, compiler flags are typically toolchain attributes. You can however use project features to change the behavior of the toolchain, for example to enable C++11 support:
+::
+  project.add_feature('c++11') 
+
+Q: How can I add a custom compiler flag to a toolchain?
+```````````````````````````````````````````````````````
+
+The easiest way is to create a new toolchain by extending an existing one using a ToolchainExtender. More documentation will be provided at a later date.
+::
+  from build.transform.toolchain import ToolchainRegistry, ToolchainExtender
+
+Q: What types of sources are supported?
+````````````````````````````````````````
+
+There following source file extensions are recognized:
+
+- .appxmanifest
+- .c
+- .cc
+- .cpp
+- .cxx
+- .dds
+- .hlsl
+- .png
+- .S
+- .wav
+- .xaml
