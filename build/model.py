@@ -7,6 +7,7 @@ import uuid
 
 class _Filtered(object):
     def __init__(self, filter):
+        super(_Filtered, self).__init__()
         self.filter = filter
         
     def matches(self, string):
@@ -28,6 +29,7 @@ class Toolchain(object):
 
 class ToolchainGroup(object):
     def __init__(self):
+        super(ToolchainGroup, self).__init__()
         self.toolchains = []
 
     def add_toolchain(self, toolchain):
@@ -69,10 +71,28 @@ class Macro(_FilteredAndPublished):
         self.value = value
 
 
+class MacroGroup(object):
+    def __init__(self):
+        super(MacroGroup, self).__init__()
+        self.macros = []
+    
+    def add_macro(self, key, value=None, filter=None, publish=None):
+        self.macros.append(Macro(key, value, filter, publish)) 
+
+
 class IncludePath(_FilteredAndPublished):
     def __init__(self, path, filter=None, publish=None):
         super(IncludePath, self).__init__(filter, publish)
         self.path = path
+
+
+class IncludePathGroup(object):
+    def __init__(self):
+        super(IncludePathGroup, self).__init__()
+        self.incpaths = []
+
+    def add_incpath(self, path, filter=None, publish=None):
+        self.incpaths.append(IncludePath(path, filter, publish)) 
 
 
 class LibraryPath(_FilteredAndPublished):
@@ -81,10 +101,39 @@ class LibraryPath(_FilteredAndPublished):
         self.path = path
 
 
+class LibraryPathGroup(object):
+    def __init__(self):
+        super(LibraryPathGroup, self).__init__()
+        self.libpaths = []
+
+    def add_libpath(self, path, filter=None, publish=None):
+        self.libpaths.append(LibraryPath(path, filter, publish)) 
+
+
+class DependencyGroup(object):
+    def __init__(self):
+        super(DependencyGroup, self).__init__()
+        self.dependencies = []
+
+    def add_dependency(self, project, filter=None, publish=None):
+        for dep in project.dependencies:
+            self.dependencies.append(dep)
+        self.dependencies.append(project) 
+
+
 class Feature(_Filtered):
     def __init__(self, name, filter=None):
         super(Feature, self).__init__(filter)
         self.name = name
+
+
+class FeatureGroup(object):
+    def __init__(self):
+        super(FeatureGroup, self).__init__()
+        self.features = []
+
+    def add_feature(self, feature_name, filter=None):
+        self.features.append(Feature(feature_name, filter))
 
 
 class ProjectRegistry(object):
@@ -107,12 +156,11 @@ class ProjectLoader(Loader):
         super(ProjectLoader, self).__init__("build.projects", path)
 
 
-class Project(SourceGroup):
+class Project(SourceGroup, FeatureGroup):
     def __init__(self, name):
         super(Project, self).__init__(name)
         self._toolchain_groups = [ToolchainGroup()]
         self._source_groups = []
-        self._features = []        
         self.uuid = str(uuid.uuid4())
         ProjectRegistry.add(self)
 
@@ -126,7 +174,7 @@ class Project(SourceGroup):
     def toolchains(self):
         return [toolchain for group in self._toolchain_groups for toolchain in group.toolchains]
 
-    def create_group(self, name):
+    def new_source_group(self, name):
         group = SourceGroup(name)
         self.source_groups.append(group)
         return group
@@ -139,26 +187,21 @@ class Project(SourceGroup):
     def source_groups(self):
         return self._source_groups
 
-    def add_feature(self, feature_name, filter=None):
-        self._features.append(Feature(feature_name, filter))
-
-    @property
-    def features(self):
-        return self._features
+    def add_feature_group(self, feature_group):
+        for feature in feature_group.features:
+            self.features.append(feature)
 
     def transform(self, toolchain):
         toolchain.transform(self)
 
 
-class CSProject(Project):
+class CSProject(Project, DependencyGroup):
     def __init__(self, name):
         super(CSProject, self).__init__(name)
-        self.dependencies = []
 
-    def add_dependency(self, project, filter=None, publish=None):
-        for dep in project.dependencies:
-            self.dependencies.append(dep)
-        self.dependencies.append(project) 
+    def add_dependency_group(self, dependency_group):
+        for dependency in dependency_group.dependencies:
+            self.dependencies.append(feature)
 
 
 class CSLibrary(CSProject):
@@ -171,27 +214,25 @@ class CSExecutable(CSProject):
         super(CSExecutable, self).__init__(name)
 
 
-class CXXProject(Project):
+class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryPathGroup, DependencyGroup):
     def __init__(self, name):
         super(CXXProject, self).__init__(name)
-        self.incpaths = []
-        self.libpaths = []
-        self.macros = []
-        self.dependencies = []
 
-    def add_dependency(self, project, filter=None, publish=None):
-        for dep in project.dependencies:
-            self.dependencies.append(dep)
-        self.dependencies.append(project) 
-       
-    def add_incpath(self, path, filter=None, publish=None):
-        self.incpaths.append(IncludePath(path, filter, publish)) 
+    def add_dependency_group(self, dependency_group):
+        for dependency in dependency_group.dependencies:
+            self.dependencies.append(dependency)
 
-    def add_libpath(self, path, filter=None, publish=None):
-        self.libpaths.append(LibraryPath(path, filter, publish)) 
+    def add_macro_group(self, macro_group):
+        for macro in macro_group.macros:
+            self.macros.append(macro)
 
-    def add_macro(self, key, value=None, filter=None, publish=None):
-        self.macros.append(Macro(key, value, filter, publish)) 
+    def add_include_path_group(self, include_path_group):
+        for include_path in include_path_group.incpaths:
+            self.incpaths.append(include_path)
+
+    def add_library_path_group(self, library_path_group):
+        for library_path in library_path_group.libpaths:
+            self.libpaths.append(library_path)
 
 
 class CXXLibrary(CXXProject):

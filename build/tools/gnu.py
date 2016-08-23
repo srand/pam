@@ -14,7 +14,7 @@ class PyBuildCXXCompiler(Tool):
         return PyBuildDirectoryCreator().transform(cxx_project, dirname)
 
     def _product(self, cxx_project, source_file):
-        return '{output}{}{}'.format(source_file, self._output_ext, output=cxx_project.output)
+        return '{output}/{}{}'.format(source_file, self._output_ext, output=cxx_project.output)
 
     def _cmdline(self, cxx_project, source_file):
         def key_value(key, value):
@@ -59,7 +59,7 @@ class PyBuildCXXArchiver(Tool):
         return PyBuildDirectoryCreator().transform(cxx_project, dirname)
         
     def _product(self, cxx_project):
-        return '{output}{}{}{}'.format(self._output_pfx, cxx_project.name, self._output_ext, output=cxx_project.output)
+        return '{output}/{}{}{}'.format(self._output_pfx, cxx_project.name, self._output_ext, output=cxx_project.output)
 
     def _cmdline(self, cxx_project, object_files):
         return "{} cr {} {}".format(self._executable, self._product(cxx_project), ' '.join(object_files))
@@ -90,7 +90,7 @@ class PyBuildCXXLinker(Tool):
         return PyBuildDirectoryCreator().transform(cxx_project, dirname)
         
     def _product(self, cxx_project):
-        return '{output}{}{}'.format(cxx_project.name, self._output_ext, output=cxx_project.output)
+        return '{output}/{}{}'.format(cxx_project.name, self._output_ext, output=cxx_project.output)
 
     def _cmdline(self, cxx_project, object_files):
         libpaths = ['-L{}'.format(path) for path in cxx_project.libpaths]
@@ -120,4 +120,3 @@ class PyBuildCXXLinker(Tool):
         cxx_project.add_dependency(executable.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(executable.product, obj)
-
