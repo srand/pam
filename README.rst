@@ -71,6 +71,12 @@ Let's get real and have a closer look at the project API and what PAM is capable
   zlib.add_macro('LINUX', filter='linux')
   zlib.add_macro('DARWIN', filter='macosx')
 
+  # Compile code according to ANSI C89
+  zlib.use_feature('language-c89')
+
+  # Optimize the generated code 
+  zlib.use_feature('optimize', level='full')
+
   # Add the set of toolchains we want to use to build the library.
   zlib.add_toolchain_group(toolchains)
 
@@ -140,14 +146,69 @@ Q: How do I add a custom compiler flag to a project?
 
 You don't, compiler flags are typically toolchain attributes. You can however use project features to change the behavior of the toolchain, for example to enable C++11 support:
 ::
-  project.add_feature('c++11') 
+  project.use_feature('language-c++11') 
 
 Q: How can I add a custom compiler flag to a toolchain?
 ```````````````````````````````````````````````````````
 
-The easiest way is to create a new toolchain by extending an existing one using a ToolchainExtender. More documentation will be provided at a later date.
+The easiest way is to create a new toolchain by extending an existing one using a ToolchainExtender. 
+The flag is then added to the new toolchain by registering a feature. 
 ::
-  from build.transform.toolchain import ToolchainRegistry, ToolchainExtender
+  from build.transform.toolchain import ToolchainExtender
+  from build.feature import PyBuildCustomCXXFlag
+
+  # Create a new toolchain called 'linux-x86-pam-gcc-sanitized', inheriting 'linux-x86-pam-gcc'
+  extented_toolchain = ToolchainExtender('linux-x86-pam-gcc-sanitized', 'linux-x86-pam-gcc')
+  
+  # Add an optinal feature to the new extended toolchain. 
+  # The feature is selected by calling .use_feature('sanitize-alignment') API on a project. 
+  extented_toolchain.add_feature(PyBuildCustomCXXFlag('-fsanitize=alignment'), 'sanitize-alignment')    
+
+  # Unconditional features can be added by omitting the name. Such features are used by all projects.
+  extented_toolchain.add_feature(PyBuildCustomCXXFlag('-fsanitize=address'))
+  
+Extending MSBuild projects with new features is more difficult since we need to manupulate an XML DOM 
+rather than command line arguments. You need to know a bit about MSBuild schemas.  
+::
+  from build.transform.toolchain import ToolchainExtender
+  from build.feature import Feature
+  
+  # Create a new toolchain called 'windows-x86-msbuild-vs14-extended'
+  extented_toolchain = ToolchainExtender('windows-x86-msbuild-vs14-extended', 'windows-x86-msbuild-vs14')    
+
+  class MSBuildTypeInfoFeature(object):
+    def transform(self, project, out_project, **kwargs):
+      # A feature transforms a project from one format into another.
+      # You can collect data from the input 'project' as needed. However, most 
+      # features will typically only manipulate the 'out_project' to enable different 
+      # compiler options.
+       
+      # Let's enable RTTI by setting the appropriate XML-tag in the ClCompile task definition.
+      out_project.clcompile.runtimetypeinfo = "true"
+
+  # Add an instance of our new feature to our new toolchain.
+  # RTTI is now enabled in all projects using this toolchain.
+  extented_toolchain.add_feature(MSBuildTypeInfoFeature())
+  
+  
+Q: What about debug/release configurations in MSBuild projects? 
+```````````````````````````````````````````````````````````````
+
+They are not supported. You will only see a 'Default' configuration matching the toolchain used. 
+If you want to build your project in different configurations you should use multiple different 
+toolchains. You can easily achieve this by extending toolchains. 
+::
+  # Create two new toolchains, one for debug builds and another for release builds.
+  debug_toolchain = ToolchainExtender('windows-x86-msbuild-vs14-debug', 'windows-x86-msbuild-vs14')
+  debug_toolchain.use_feature('optimize', level='disabled')
+
+  release_toolchain = ToolchainExtender('windows-x86-msbuild-vs14-release', 'windows-x86-msbuild-vs14')    
+  release_toolchain.use_feature('optimize', level='full')
+  
+  project = CXXExecutable('myapp')
+  project.add_toolchain('windows-x86-msbuild-vs14-debug')
+  project.add_toolchain('windows-x86-msbuild-vs14-release')
+
 
 Q: What types of sources are supported?
 ````````````````````````````````````````
@@ -165,3 +226,14 @@ There following source file extensions are recognized:
 - .S
 - .wav
 - .xaml
+
+
+Q: What features are supported?
+```````````````````````````````
+
+- optimize - with mandatory argument 'level' set to one of 'disabled', 'size', 'speed', 'full'.
+- language-c89 - compile as C89 code
+- language-c99 - compile as C99 code
+- language-c11 - compile as C11 code
+- language-c++11 - compile as C++11 code
+- language-c++14 - compile as C++14 code

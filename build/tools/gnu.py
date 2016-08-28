@@ -94,7 +94,7 @@ class PyBuildCXXLinker(Tool):
 
     def _cmdline(self, cxx_project, object_files):
         libpaths = ['-L{}'.format(path) for path in cxx_project.libpaths]
-        libpaths += ['-L{output}/{lib}'.format(output=cxx_project.toolchain.output, lib=lib) for lib in cxx_project.libraries]
+        libpaths += ['-L{output}/{lib}'.format(output=cxx_project.toolchain.attributes.output, lib=lib) for lib in cxx_project.libraries]
         libraries = ['-l{}'.format(path) for path in cxx_project.libraries]
         flags = cxx_project.linkflags
 

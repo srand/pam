@@ -7,10 +7,10 @@ from build.utils import Dispatch, multidispatch
 class ZipFeature(Feature):
     dispatch = Dispatch()
     
-    def __init__(self, name):
-        super(ZipFeature, self).__init__(name)
+    def __init__(self):
+        super(ZipFeature, self).__init__()
 
-    def transform(self, project, out_project):
+    def transform(self, project, out_project, **kwargs):
         pass
 
-zip = ZipFeature("zip")
+zip = ZipFeature()

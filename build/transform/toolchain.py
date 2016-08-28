@@ -59,6 +59,13 @@ class Toolchain(object):
         else:
             # while named features are optional and selected by the project
             self._features_with_name[name] = feature
+            
+    def apply_feature(self, project, transformed_project, feature):
+        if feature.matches(self.name):
+            name, args = feature.name, feature.args
+            feature = self._features_with_name.get(name)
+            if feature:
+                feature.transform(project, transformed_project, **args)
 
     def apply_features(self, project, transformed_project):
         # Apply toolchain features
@@ -66,10 +73,7 @@ class Toolchain(object):
             feature.transform(project, transformed_project)
         # Apply project features
         for feature in project.features:
-            if feature.matches(self.name):    
-                feature = self._features_with_name.get(feature.name)
-                if feature:
-                    feature.transform(project, transformed_project)
+            self.apply_feature(project, transformed_project, feature)
 
     def add_tool(self, extension, driver):
         self._tools[extension] = driver
@@ -93,15 +97,23 @@ class Toolchain(object):
 class ToolchainExtender(Toolchain):
     def __init__(self, name, toolchain):
         super(ToolchainExtender, self).__init__(name)
-        self.toolchain = toolchain
+        self.toolchain = toolchain if isinstance(toolchain, Toolchain) else ToolchainRegistry.find(toolchain)
+        self._used_features = []        
 
     @property
     def supported(self):
         return self.toolchain.supported and super(ToolchainExtender, self).supported
 
     def apply_features(self, project, transformed_project):
+        for feature in self._used_features:
+            self.apply_feature(project, transformed_project, feature)        
         self.toolchain.apply_features(project, transformed_project)
         super(ToolchainExtender, self).apply_features(project, transformed_project)
+        
+    def use_feature(self, name):
+        feature = Feature(name)
+        self._used_features.append(feature)
+        return feature    
 
     def get_tool(self, extension):
         try:

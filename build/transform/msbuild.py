@@ -734,7 +734,6 @@ class CXXToolchain(Toolchain):
         self.toolset = 'v140'
         self.charset = None
         self.subsystem = 'Console'
-        self.output = "output/{}".format(name)
 
     def generate(self, project):
         filter_project = FilterProject()
@@ -763,7 +762,7 @@ class CXXToolchain(Toolchain):
             incpaths += [incpath.path for dep in project.dependencies for incpath in dep.incpaths if incpath.publish]
             libpaths += [libpath.path for dep in project.dependencies for libpath in dep.libpaths if libpath.publish]
             _libraries = [dep.name for dep in project.dependencies if isinstance(dep, model.CXXLibrary)]
-            libraries  = ['{output}/{lib}/{lib}.lib'.format(output=self.output, lib=lib) for lib in _libraries]
+            libraries  = ['{output}/{lib}/{lib}.lib'.format(output=self.attributes.output, lib=lib) for lib in _libraries]
             libraries += ['d2d1.lib', 'd3d11.lib', 'dxgi.lib', 'windowscodecs.lib; dwrite.lib; dxguid.lib;xaudio2.lib;xinput.lib;mfcore.lib; mfplat.lib; mfreadwrite.lib; mfuuid.lib; %(AdditionalDependencies)']
             cxx_project.link.additionaldependencies = ';'.join(libraries)
             cxx_project.link.additionallibrarydirectories = ';'.join(libpaths)
@@ -773,8 +772,8 @@ class CXXToolchain(Toolchain):
         cxx_project.clcompile.preprocessordefinitions = ';'.join(macros)
         cxx_project.clcompile.trackerlogdirectory = "$(IntDir)"
 
-        cxx_project.properties_group.intdir = "{}/{}/".format(self.output, project.name)
-        cxx_project.properties_group.outdir = "{}/{}/".format(self.output, project.name)
+        cxx_project.properties_group.intdir = "{}/{}/".format(self.attributes.output, project.name)
+        cxx_project.properties_group.outdir = "{}/{}/".format(self.attributes.output, project.name)
         cxx_project.properties_group.targetpath = "$(OutDir)$(TargetName)$(TargetExt)"
 
         self.apply_features(project, cxx_project)
@@ -873,7 +872,6 @@ class CSToolchain(Toolchain):
         self.toolset = 'v140'
         self.charset = None
         self.subsystem = 'Console'
-        self.output = "output/{}".format(name)
 
     def generate(self, project):
         cs_project = CSProject(self)
@@ -899,7 +897,7 @@ class CSToolchain(Toolchain):
                     pr.include = '{}.csproj'.format(dep.name)
                     pr.name = dep.name
                     pr.project = '{%s}' % dep.uuid
-                    cs_project.globals.referencepath += os.path.join(os.getcwd(), "{}/{}/bin".format(self.output, dep.name))
+                    cs_project.globals.referencepath += os.path.join(os.getcwd(), "{}/{}/bin".format(self.attributes.output, dep.name))
                     self.generate(dep)
                     
 
@@ -910,8 +908,8 @@ class CSToolchain(Toolchain):
         config.debugtype = "full"
         config.optimize = "true"
         config.errorreport = "prompt"
-        config.outputpath = "{}/{}/bin".format(self.output, project.name)
-        config.intermediateoutputpath = "{}/{}/obj".format(self.output, project.name)
+        config.outputpath = "{}/{}/bin".format(self.attributes.output, project.name)
+        config.intermediateoutputpath = "{}/{}/obj".format(self.attributes.output, project.name)
 
         self.apply_features(project, cs_project)
 

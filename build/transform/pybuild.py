@@ -165,7 +165,6 @@ class Object(Command):
 class CXXToolchain(Toolchain):
     def __init__(self, name):
         super(CXXToolchain, self).__init__(name)
-        self.output = path.join("output", name)
         self._tools = {}
         self._cxx_archiver = None
         self._cxx_linker = None

@@ -57,7 +57,6 @@ class SourceGroup(object):
             else:
                 all_files = os.listdir(path)
                 all_files = [os.path.join(path, file) for file in all_files]
-
         matching_files = [file for file in all_files if re.match(regex, file)]
         for source_file in matching_files:
             self.sources.append(Source(source_file, filter, tool, kwargs))
@@ -121,9 +120,13 @@ class DependencyGroup(object):
 
 
 class Feature(_Filtered):
-    def __init__(self, name, filter=None):
+    def __init__(self, name, filter=None, **kwargs):
         super(Feature, self).__init__(filter)
         self.name = name
+        self.args = kwargs
+        
+    def add_argument(self, **kwargs):
+        self.args.update(kwargs)
 
 
 class FeatureGroup(object):
@@ -131,8 +134,10 @@ class FeatureGroup(object):
         super(FeatureGroup, self).__init__()
         self.features = []
 
-    def add_feature(self, feature_name, filter=None):
-        self.features.append(Feature(feature_name, filter))
+    def use_feature(self, feature_name, filter=None, **kwargs):
+        feature = Feature(feature_name, filter, **kwargs)
+        self.features.append(feature)
+        return feature
 
 
 class ProjectRegistry(object):

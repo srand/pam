@@ -22,9 +22,8 @@ class FeatureLoader(Loader):
 
 
 class Feature(object):
-    def __init__(self, name):
-        self.name = name    
-        FeatureRegistry.add(self)    
+    def __init__(self):
+        super(Feature, self).__init__()
 
-    def transform(self, project, transformed):
+    def transform(self, project, transformed, **kwargs):
         pass

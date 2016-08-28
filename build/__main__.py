@@ -63,14 +63,13 @@ available toolchains:
                         build(dependency)
                 if not re.search(args.toolchain, toolchain_name):
                     continue
-                print('===== Building %s with %s' % (project.name, toolchain_name))
                 try:
                     toolchain = ToolchainRegistry.find(toolchain_name)
                     if not toolchain.supported:
-                        print('warning: toolchain not supported\n')
                         continue
                 except ValueError as e:
                     exit("unrecognized toolchain '{}'".format(toolchain_name))
+                print('===== Building %s with %s' % (project.name, toolchain_name))
                 project.transform(toolchain)
                 print('\n')
         if project not in completed:
