@@ -29,7 +29,7 @@ class PyBuildCustomLinkerFlag(Feature):
 
 
 class PyBuildOptimize(Feature):
-    MSVC = {'disable': '/O0', 'space': '/O1', 'speed': '/O2', 'full': '/O3'}
+    MSVC = {'disable': '/Od', 'space': '/Os', 'speed': '/Ot', 'full': '/Ox'}
     GNU = {'disable': '-O0', 'space': '-O1', 'speed': '-O2', 'full': '-O3'}
 
     def __init__(self, levels):
