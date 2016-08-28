@@ -1,3 +1,5 @@
 from build.features import gnu
 
-PyBuildWordsize = gnu.PyBuildWordsize
+PyBuildCustomCFlag = gnu.PyBuildCustomCFlag
+PyBuildCustomCXXFlag = gnu.PyBuildCustomCXXFlag
+PyBuildCustomLinkerFlag = gnu.PyBuildCustomLinkerFlag

@@ -16,6 +16,7 @@ zlib = CXXLibrary('zlib')
 # If an unconventional file extension is used, a tool may be selected explicitly
 # with the tool attribute. For example, to build as C++ use: tool='.cpp' 
 zlib.add_sources('zlib', r'.*\.c$')
+zlib.add_feature('c++11')
 
 # Next we add an include path so that the library's headers can be found. 
 # When the publish attribute is set to true, the path will be inherited by 

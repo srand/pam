@@ -1,4 +1,3 @@
-from build.feature import FeatureRegistry
 from build.utils import Loader
 import os
 import re

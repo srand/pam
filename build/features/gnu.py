@@ -1,5 +1,3 @@
-
-
 class PyBuildOptimize:
     NONE = 0
     SIZE = 1
@@ -13,14 +11,3 @@ class PyBuildOptimize:
         value = ['/O0', '/O1', '/O2', '/O3'][self.level]
         cxx_project.add_cflag(value)
         cxx_project.add_cxxflag(value)
-
-
-class PyBuildWordsize:
-    def __init__(self, bits):
-        self.bits = bits
-
-    def transform(self, project, cxx_project):
-        value = '-m{}'.format(self.bits)
-        cxx_project.add_cflag(value)
-        cxx_project.add_cxxflag(value)
-        cxx_project.add_linkflag(value)

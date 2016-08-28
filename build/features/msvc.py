@@ -1,22 +1,6 @@
+from build.features.pybuild import * 
 
-class PyBuildCustomCFlag(object):
-    def __init__(self, str):
-        self.str = str
-
-    def transform(self, project, cxx_project):
-        cxx_project.add_cflag(self.str)
-        cxx_project.add_cxxflag(self.str)
-
-
-class PyBuildCustomLinkerFlag(object):
-    def __init__(self, str):
-        self.str = str
-
-    def transform(self, project, cxx_project):
-        cxx_project.add_linkflag(self.str)
-
-
-class PyBuildOptimize(PyBuildCustomCFlag):
+class PyBuildOptimize(PyBuildCustomCFlag, PyBuildCustomCXXFlag):
     NONE = 0
     SIZE = 1
     SPEED = 2
@@ -25,12 +9,6 @@ class PyBuildOptimize(PyBuildCustomCFlag):
     def __init__(self, level=FULL):
         super(PyBuildOptimize, self).__init__(['/Od', '/O1', '/O2', '/Ox'][level])
         self.level = level
-
-
-class PyBuildWordsize(PyBuildCustomCFlag):
-    def __init__(self, bits):
-        super(PyBuildWordsize, self).__init__('-m{}'.format(bits))
-
 
 ###############################################################################
 

@@ -46,17 +46,30 @@ class Toolchain(object):
         super(Toolchain, self).__init__()
         self._tools = {}
         self._features = []
+        self._features_with_name = {}
         self._requirements = []
         self.name = name
         self.attributes = ToolchainAttributes(self)
         ToolchainRegistry.add(self)
 
-    def add_feature(self, feature):
-        self._features.append(feature)
+    def add_feature(self, feature, name=None):
+        if not name:
+            # Anonymous features are applied to all projects
+            self._features.append(feature)
+        else:
+            # while named features are optional and selected by the project
+            self._features_with_name[name] = feature
 
     def apply_features(self, project, transformed_project):
+        # Apply toolchain features
         for feature in self._features:
             feature.transform(project, transformed_project)
+        # Apply project features
+        for feature in project.features:
+            if feature.matches(self.name):    
+                feature = self._features_with_name.get(feature.name)
+                if feature:
+                    feature.transform(project, transformed_project)
 
     def add_tool(self, extension, driver):
         self._tools[extension] = driver
@@ -83,8 +96,8 @@ class ToolchainExtender(Toolchain):
         self.toolchain = toolchain
 
     @property
-    def attribute(self):
-        return self.toolchain.attributes
+    def supported(self):
+        return self.toolchain.supported and super(ToolchainExtender, self).supported
 
     def apply_features(self, project, transformed_project):
         self.toolchain.apply_features(project, transformed_project)
@@ -95,7 +108,7 @@ class ToolchainExtender(Toolchain):
             return super(ToolchainExtender, self).get_tool(extension)
         except:
             pass
-        return self.toolchain.get_Tool(extension)
+        return self.toolchain.get_tool(extension)
 
     def generate(self, project, toolchain=None):
         return self.toolchain.generate(project, toolchain)
@@ -103,53 +116,3 @@ class ToolchainExtender(Toolchain):
     def transform(self, project):
         self.generate(project, self).transform()
 
-"""        
-def mac_x86_libcxx_settings():
-    toolchain = ClangCXXToolchain()
-    toolchain.settings.add_cflag('-m32')
-    toolchain.settings.add_cxxflag('-m32')
-    toolchain.settings.add_cxxflag('-stdlib=libc++')
-    toolchain.settings.add_linkflag('-m32')
-    toolchain.settings.add_linkflag('-stdlib=libc++')
-    return Settings(toolchain.settings)
-
-
-def ios_x86_libcxx_settings():
-    toolchain = ClangCXXToolchain()
-    toolchain.settings.add_cflag('-m32')
-    toolchain.settings.add_cxxflag('-m32')
-    toolchain.settings.add_cxxflag('-stdlib=libc++')
-    toolchain.settings.add_linkflag('-m32')
-    toolchain.settings.add_linkflag('-stdlib=libc++')
-
-    toolchain.settings.add_cflag('-isysroot')
-    toolchain.settings.add_cflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
-    toolchain.settings.add_cxxflag('-isysroot')
-    toolchain.settings.add_cxxflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
-    toolchain.settings.add_linkflag('-isysroot')
-    toolchain.settings.add_linkflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
-    return Settings(toolchain.settings)
-
-
-def ios_armv7_libcxx_settings():
-    toolchain = ClangCXXToolchain()
-
-    # Building for ARMv7
-    toolchain.settings.add_cflag('-arch', 'armv7')
-    toolchain.settings.add_cxxflag('-arch', 'armv7')
-    toolchain.settings.add_linkflag('-arch', 'armv7')
-
-    # With libc++
-    toolchain.settings.add_cxxflag('-stdlib=libc++')
-    toolchain.settings.add_linkflag('-stdlib=libc++')
-
-    # And default iOS SDK
-    toolchain.settings.add_cflag('-isysroot')
-    toolchain.settings.add_cflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
-    toolchain.settings.add_cxxflag('-isysroot')
-    toolchain.settings.add_cxxflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
-    toolchain.settings.add_linkflag('-isysroot')
-    toolchain.settings.add_linkflag('/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk')
-    return Settings(toolchain.settings)
-
-"""

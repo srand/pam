@@ -795,11 +795,6 @@ class CXXToolchain(Toolchain):
                 filter_project.add_sources(tool, group, sources)
             filter_project.add_group(group)
 
-        for feature in project.features:
-            if feature.matches(self.name):
-                feature = FeatureRegistry.find(feature.name)
-                feature.transform(project, cxx_project)
-
         cxx_project.write('{}.vcxproj'.format(project.name))
         filter_project.write('{}.vcxproj.filters'.format(project.name))
 
