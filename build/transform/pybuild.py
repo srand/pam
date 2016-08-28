@@ -194,11 +194,12 @@ class CXXToolchain(Toolchain):
         self._cxx_linker = linker_driver
 
     def generate(self, project, toolchain=None):
-        cxx_project = CXXProject(toolchain if toolchain else self, project.name)
+        toolchain = toolchain if toolchain else self
+        cxx_project = CXXProject(toolchain, project.name)
         
-        macros = [macro for macro in project.macros if macro.matches(self.name)]
-        incpaths = [incpath for incpath in project.incpaths if incpath.matches(self.name)]
-        libpaths = [libpath for libpath in project.libpaths if libpath.matches(self.name)]
+        macros = [macro for macro in project.macros if macro.matches(toolchain.name)]
+        incpaths = [incpath for incpath in project.incpaths if incpath.matches(toolchain.name)]
+        libpaths = [libpath for libpath in project.libpaths if libpath.matches(toolchain.name)]
 
         if isinstance(project, model.CXXExecutable):
             macros += [macro for dep in project.dependencies for macro in dep.macros if macro.publish]
@@ -221,7 +222,7 @@ class CXXToolchain(Toolchain):
         groups = project.source_groups + [project]
         for group in groups:
             for source in group.sources:
-                tool = self.get_tool(source.tool)
+                tool = toolchain.get_tool(source.tool)
                 if tool is None:
                     raise RuntimeError()
                 tool.transform(cxx_project, source)
@@ -229,12 +230,14 @@ class CXXToolchain(Toolchain):
         if isinstance(project, model.CXXLibrary):
             objects = cxx_project.objects
             object_names = [obj.product for obj in objects]
-            cxx_project.job = self.archiver.transform(cxx_project, object_names)
+            archiver = toolchain.archiver if hasattr(toolchain, 'archiver') else self.archiver
+            cxx_project.job = archiver.transform(cxx_project, object_names)
 
         if isinstance(project, model.CXXExecutable):
             objects = cxx_project.objects
             object_names = [obj.product for obj in objects]
-            cxx_project.job = self.linker.transform(cxx_project, object_names)
+            linker = toolchain.linker if hasattr(toolchain, 'linker') else self.linker
+            cxx_project.job = linker.transform(cxx_project, object_names)
             
         return cxx_project
             
