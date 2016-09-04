@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 import re
+import time
 from build.transform.toolchain import ToolchainRegistry, ToolchainLoader
 from build.feature import FeatureLoader
 from build.model import ProjectRegistry, ProjectLoader
@@ -69,8 +70,11 @@ available toolchains:
                         continue
                 except ValueError as e:
                     exit("unrecognized toolchain '{}'".format(toolchain_name))
-                print('===== Building %s with %s' % (project.name, toolchain_name))
+                start_time = time.time()
+                print('===== Building: %s with %s' % (project.name, toolchain_name))
                 project.transform(toolchain)
+                elapsed = time.time() - start_time
+                print('===== Done: %dm %ds' % (elapsed / 60, elapsed % 60))
                 print('\n')
         if project not in completed:
             build(project)

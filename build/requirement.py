@@ -19,6 +19,7 @@ class HostRequirement(Requirement):
     def satisfied(self):
         return platform.system() == self.host
 
+
 HostRequirement.WINDOWS = HostRequirement('Windows')
 HostRequirement.LINUX = HostRequirement('Linux')
 HostRequirement.DARWIN = HostRequirement('Darwin')
