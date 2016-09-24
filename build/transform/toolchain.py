@@ -80,7 +80,7 @@ class Toolchain(object):
 
     def get_tool(self, extension):
         if extension not in self._tools:
-            raise RuntimeError('could not find tool for extension {}'.format(extension))
+            raise RuntimeError('could not find tool for {} extension'.format(extension))
         return self._tools[extension]
 
     def add_requirement(self, req):

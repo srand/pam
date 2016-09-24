@@ -723,6 +723,11 @@ class CXXProject(Project):
         self.getroot().insert(-1, pg)
         return pg        
 
+    def transform(self):
+        rc, _ = utils.execute('MSBuild.exe {}.vcxproj /m  /p:Configuration={} /p:Platform={platform}'.format(
+            self.name, self.toolchain.config, platform=self.toolchain.platform), self.toolchain.vcvars)
+        if rc != 0:
+            raise RuntimeError()
 
 
 class CXXToolchain(Toolchain):
@@ -735,10 +740,11 @@ class CXXToolchain(Toolchain):
         self.charset = None
         self.subsystem = 'Console'
 
-    def generate(self, project):
+    def generate(self, project, toolchain=None):
         filter_project = FilterProject()
 
-        cxx_project = CXXProject(self)
+        toolchain = toolchain if toolchain else self
+        cxx_project = CXXProject(toolchain)
         cxx_project.tools_version = self.vcvars['VisualStudioVersion']
 
         cxx_project.globals_group.projectname = project.name
@@ -748,9 +754,9 @@ class CXXToolchain(Toolchain):
         def key_value(key, value):
             return key if value is None else "{}={}".format(key, value)
 
-        macros = [key_value(macro.key, macro.value) for macro in project.macros if macro.matches(self.name)]
-        incpaths = [incpath.path for incpath in project.incpaths if incpath.matches(self.name)]
-        libpaths = [libpath.path for libpath in project.libpaths if libpath.matches(self.name)]
+        macros = [key_value(macro.key, macro.value) for macro in project.macros if macro.matches(toolchain.name)]
+        incpaths = [incpath.path for incpath in project.incpaths if incpath.matches(toolchain.name)]
+        libpaths = [libpath.path for libpath in project.libpaths if libpath.matches(toolchain.name)]
 
         if isinstance(project, model.CXXLibrary):
             cxx_project.config_props.type = 'StaticLibrary'
@@ -762,7 +768,7 @@ class CXXToolchain(Toolchain):
             incpaths += [incpath.path for dep in project.dependencies for incpath in dep.incpaths if incpath.publish]
             libpaths += [libpath.path for dep in project.dependencies for libpath in dep.libpaths if libpath.publish]
             _libraries = [dep.name for dep in project.dependencies if isinstance(dep, model.CXXLibrary)]
-            libraries  = ['{output}/{lib}/{lib}.lib'.format(output=self.attributes.output, lib=lib) for lib in _libraries]
+            libraries  = ['{output}/{lib}/{lib}.lib'.format(output=toolchain.attributes.output, lib=lib) for lib in _libraries]
             libraries += ['d2d1.lib', 'd3d11.lib', 'dxgi.lib', 'windowscodecs.lib; dwrite.lib; dxguid.lib;xaudio2.lib;xinput.lib;mfcore.lib; mfplat.lib; mfreadwrite.lib; mfuuid.lib; %(AdditionalDependencies)']
             cxx_project.link.additionaldependencies = ';'.join(libraries)
             cxx_project.link.additionallibrarydirectories = ';'.join(libpaths)
@@ -776,7 +782,7 @@ class CXXToolchain(Toolchain):
         cxx_project.properties_group.outdir = "{}/{}/".format(self.attributes.output, project.name)
         cxx_project.properties_group.targetpath = "$(OutDir)$(TargetName)$(TargetExt)"
 
-        self.apply_features(project, cxx_project)
+        toolchain.apply_features(project, cxx_project)
 
         groups = project.source_groups + [project]
         for group in groups:
@@ -786,7 +792,7 @@ class CXXToolchain(Toolchain):
                     tool_sources[source.tool] = []
                 tool_sources[source.tool].append(source)
             for tool_name in tool_sources:
-                tool = self.get_tool(tool_name)
+                tool = toolchain.get_tool(tool_name)
                 if tool is None:
                     raise RuntimeError()
                 sources = tool_sources[tool_name]
@@ -798,11 +804,9 @@ class CXXToolchain(Toolchain):
         filter_project.write('{}.vcxproj.filters'.format(project.name))
 
     def transform(self, project):
-        self.generate(project)        
-        rc, _ = utils.execute('MSBuild.exe {}.vcxproj /m  /p:Configuration={} /p:Platform={platform}'.format(
-            project.name, self.config, platform=self.platform), self.vcvars)
-        if rc != 0:
-            raise RuntimeError()
+        cxx_project = self.generate(project)
+        cxx_project.transform()
+
 
 #########################################################################################
 

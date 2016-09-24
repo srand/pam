@@ -4,6 +4,7 @@ from build.model import CXXLibrary, CXXExecutable, ToolchainGroup
 toolchains = ToolchainGroup()
 toolchains.add_toolchain('linux-x64-pam-gcc')
 toolchains.add_toolchain('macosx-x64-pam-clang')
+toolchains.add_toolchain('macosx-x64-xcbuild-clang')
 toolchains.add_toolchain('windows-x86-pam-vs14')
 toolchains.add_toolchain('windows-x64-pam-vs14')
 toolchains.add_toolchain('windows-x64-msbuild-vs14')
