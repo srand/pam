@@ -1,3 +1,14 @@
+##############################################################################
+#
+# (C) 2016 - Robert Andersson - All rights reserved.
+#
+# This file and its contents are the property of Robert Andersson
+# and may not be distributed, copied, or disclosed, in whole or in part,
+# for any reason without written consent of the copyright holder.
+#
+##############################################################################
+
+
 from build.utils import Loader
 import os
 import re
@@ -9,10 +20,10 @@ class _Filtered(object):
         super(_Filtered, self).__init__()
         self.filter = filter
         
-    def matches(self, string):
+    def matches(self, toolchain):
         if self.filter is None:
             return True
-        return re.search(self.filter, string) is not None
+        return re.search(self.filter, toolchain) is not None
 
 
 class _FilteredAndPublished(_Filtered):
@@ -21,21 +32,21 @@ class _FilteredAndPublished(_Filtered):
         self.publish = publish
 
 
-class Toolchain(object):
-    def __init__(self, name):
-        self.name = name
-
-
 class ToolchainGroup(object):
+    """ A collection of toolchain identifiers """
+
     def __init__(self):
         super(ToolchainGroup, self).__init__()
         self.toolchains = []
 
     def add_toolchain(self, toolchain):
+        """ Adds a toolchain identifier (string) to the collection """
         self.toolchains.append(toolchain)
 
 
 class Source(_Filtered):
+    """ Representation of a project source file """
+
     def __init__(self, path, filter=None, tool=None, args=None):
         super(Source, self).__init__(filter)
         self.path = os.path.normpath(path)
@@ -44,12 +55,37 @@ class Source(_Filtered):
 
 
 class SourceGroup(object):
+    """ A collection of source files.
+
+        A source group can be reused in multiple projects. 
+    
+        Some toolchains can use source groups to organize sources logically.
+        For example, MSBuild toolchains tranform source groups into filters 
+        which are visible as folders if the generated project is loaded in 
+        Visual Studio. The filter's name will be **name** if provided.
+    """
+
     def __init__(self, name=None):
         super(SourceGroup, self).__init__()
         self.sources = []
         self.name = name
 
     def add_sources(self, path, regex=r'.*', recurse=False, filter=None, tool=None, **kwargs):
+        """ Add sources from **path** to the group. Directories will be enumerated, 
+        but child directories won't unless **recurse** is True. **regex** can be used
+        to filter the resulting list of files. 
+        
+        File extensions are used to find a matching tool to be associated with the source file. 
+        If an unconventional file extension is used, a tool can be explicitly selected by 
+        providing the extension, such as '.cpp' in the **tool** argument.
+
+        The **filter** regex makes it possible to add sources conditionally for a
+        specific toolchain. The regex is matched against the toolchain
+        identifier to determine if the sources should be built or not.    
+
+        Additional keyword arguments can be provided and will be forwarded directly to 
+        the tool that becomes associated with the sources. Keys and values are tool specific. 
+        """
         all_files = [path]
         if os.path.isdir(path):
             if recurse:
@@ -62,25 +98,36 @@ class SourceGroup(object):
             self.sources.append(Source(source_file, filter, tool, kwargs))
 
 
-class Macro(_FilteredAndPublished):
-    def __init__(self, key, value=None, filter=None, publish=None):
-        super(Macro, self).__init__(filter, publish)
+class _Macro(_FilteredAndPublished):
+    def __init__(self, key, value=None, filter=None, publish=False):
+        super(_Macro, self).__init__(filter, publish)
         self.key = key
         self.value = value
 
 
 class MacroGroup(object):
+    """ A collection of preprocessor macros. """
     def __init__(self):
         super(MacroGroup, self).__init__()
         self.macros = []
     
-    def add_macro(self, key, value=None, filter=None, publish=None):
-        self.macros.append(Macro(key, value, filter, publish)) 
+    def add_macro(self, macro, value=None, filter=None, publish=False):
+        """ Add a preprocessor **macro** to the group with an optional
+        **value**. 
+        
+        The **filter** regex makes it possible to add macros conditionally for a
+        specific toolchain. The regex is matched against the toolchain
+        identifier to determine if macros should be applied or not.
+
+        If **publish** is True, the macro will be inherited to projects
+        depending on the project to which this group belongs.  
+        """
+        self.macros.append(_Macro(macro, value, filter, publish)) 
 
 
-class IncludePath(_FilteredAndPublished):
+class _IncludePath(_FilteredAndPublished):
     def __init__(self, path, filter=None, publish=None):
-        super(IncludePath, self).__init__(filter, publish)
+        super(_IncludePath, self).__init__(filter, publish)
         self.path = path
 
 
@@ -90,12 +137,12 @@ class IncludePathGroup(object):
         self.incpaths = []
 
     def add_incpath(self, path, filter=None, publish=None):
-        self.incpaths.append(IncludePath(path, filter, publish)) 
+        self.incpaths.append(_IncludePath(path, filter, publish)) 
 
 
-class LibraryPath(_FilteredAndPublished):
+class _LibraryPath(_FilteredAndPublished):
     def __init__(self, path, filter=None, publish=None):
-        super(LibraryPath, self).__init__(filter, publish)
+        super(_LibraryPath, self).__init__(filter, publish)
         self.path = path
 
 
@@ -119,9 +166,9 @@ class DependencyGroup(object):
         self.dependencies.append(project) 
 
 
-class Feature(_Filtered):
+class _Feature(_Filtered):
     def __init__(self, name, filter=None, **kwargs):
-        super(Feature, self).__init__(filter)
+        super(_Feature, self).__init__(filter)
         self.name = name
         self.args = kwargs
         
@@ -135,7 +182,7 @@ class FeatureGroup(object):
         self.features = []
 
     def use_feature(self, feature_name, filter=None, **kwargs):
-        feature = Feature(feature_name, filter, **kwargs)
+        feature = _Feature(feature_name, filter, **kwargs)
         self.features.append(feature)
         return feature
 
@@ -240,8 +287,10 @@ class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryPathGroup, Depend
 
 
 class CXXLibrary(CXXProject):
-    def __init__(self, name):
+    def __init__(self, name, shared=False):
+        """ Initialized a new C++ native library project called **name** """
         super(CXXLibrary, self).__init__(name)
+        self.shared = shared
 
 
 class CXXExecutable(CXXProject):

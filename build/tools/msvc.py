@@ -1,3 +1,14 @@
+##############################################################################
+#
+# (C) 2016 - Robert Andersson - All rights reserved.
+#
+# This file and its contents are the property of Robert Andersson
+# and may not be distributed, copied, or disclosed, in whole or in part,
+# for any reason without written consent of the copyright holder.
+#
+##############################################################################
+
+
 from build.tools import Tool
 from build.tools.directory import PyBuildDirectoryCreator
 from build.transform import msbuild 
@@ -147,7 +158,7 @@ class PyBuildCXXArchiver(Tool):
     def _info(self, cxx_project):
         return ' [{}] {}'.format(self._executable.upper(), cxx_project.name)
 
-    def transform(self, cxx_project, object_files):
+    def transform(self, project, cxx_project, object_files):
         product = self._product(cxx_project)
         dir = self._directory(cxx_project, path.dirname(product))
         library = pybuild.Object(
@@ -166,36 +177,39 @@ class PyBuildCXXLinker(Tool):
     def __init__(self, env=None):
         self._executable = 'link.exe'
         self._output_ext = '.exe'
+        self._output_ext_dll = '.dll'
         self._env = env
 
     def _directory(self, cxx_project, dirname):
         return PyBuildDirectoryCreator().transform(cxx_project, dirname)
 
-    def _product(self, cxx_project):
-        return path.join(cxx_project.output, '{}{}'.format(cxx_project.name, self._output_ext))
+    def _product(self, project, cxx_project):
+        return path.join(cxx_project.output, '{}{}'.format(
+            cxx_project.name, self._output_ext_dll if project.shared else self._output_ext))
 
-    def _cmdline(self, cxx_project, object_files):
+    def _cmdline(self, project, cxx_project, object_files):
         libpaths = ['/libpath:{}'.format(path) for path in cxx_project.libpaths]
         libraries = ['{output}/{lib}/{lib}.lib'.format(output=cxx_project.toolchain.attributes.output, lib=lib) for lib in cxx_project.libraries]
         flags = cxx_project.linkflags
 
-        return "{} /nologo {} {} {} {} /out:{}".format(
+        return "{} /nologo {} {} {} {} {} /out:{}".format(
             self._executable, 
+            '/dll' if project.shared else '',
             ' '.join(libpaths),
             ' '.join(libraries),
             ' '.join(flags),
             ' '.join(object_files),
-            self._product(cxx_project))
+            self._product(project, cxx_project))
 
     def _info(self, cxx_project):
         return ' [{}] {}'.format(self._executable.upper(), cxx_project.name)
 
-    def transform(self, cxx_project, object_files):
-        product = self._product(cxx_project)
+    def transform(self, project, cxx_project, object_files):
+        product = self._product(project, cxx_project)
         dir = self._directory(cxx_project, path.dirname(product))
         executable = pybuild.Object(
             product, 
-            self._cmdline(cxx_project, object_files), 
+            self._cmdline(project, cxx_project, object_files), 
             self._info(cxx_project),
             self._env)
         cxx_project.add_job(executable)                            

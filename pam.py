@@ -10,7 +10,7 @@ toolchains.add_toolchain('windows-x64-pam-vs14')
 toolchains.add_toolchain('windows-x64-msbuild-vs14')
   
 # Let's build a very commonly used library, zlib. 
-zlib = CXXLibrary('zlib')
+zlib = CXXLibrary('zlib', shared=True)
 
 # We add sources to the project by collecting all .c files from the zlib directory.
 # Sources are automatically paired with matching tools through their file extensions. 

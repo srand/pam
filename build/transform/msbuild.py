@@ -1,3 +1,14 @@
+##############################################################################
+#
+# (C) 2016 - Robert Andersson - All rights reserved.
+#
+# This file and its contents are the property of Robert Andersson
+# and may not be distributed, copied, or disclosed, in whole or in part,
+# for any reason without written consent of the copyright holder.
+#
+##############################################################################
+
+
 from build import model
 from build.transform import utils
 from build.transform.toolchain import Toolchain
@@ -132,7 +143,7 @@ class ProjectConfigurationsItemGroup(ItemGroup):
         super(ProjectConfigurationsItemGroup, self).__init__('ProjectConfigurations')
 
 
-@Attribute('ConfigurationType', varname='type', child=True, values=['Application', 'SharedLibrary', 'StaticLibrary'])
+@Attribute('ConfigurationType', varname='type', child=True, values=['Application', 'DynamicLibrary', 'StaticLibrary'])
 @Attribute('PlatformToolset', varname='toolset', child=True, values=['v110', 'v120', 'v110_xp', 'v120_xp', 'v140', 'v140_xp'])
 @Attribute('CharacterSet', varname='charset', child=True, values=['MultiByte', None])
 @Attribute('PreferredToolArchitecture', varname='tool_architecture', child=True, values=['x64'])
@@ -676,8 +687,11 @@ class CXXItemDefinitionGroup(ItemDefinitionGroup):
 #@Composition(Import, 'import')
 #@Composition(ImportGroup, 'importgroup')
 class CXXProject(Project):
-    def __init__(self, toolchain):
+    def __init__(self, project, toolchain):
         super(CXXProject, self).__init__()
+        self.project = project
+        self.toolchain = toolchain
+
         self.configs_group = ProjectConfigurationsItemGroup()
         self.globals_group = CXXPropertyGroup('Globals')
         self.globals_group.platform = "Win32"
@@ -725,7 +739,7 @@ class CXXProject(Project):
 
     def transform(self):
         rc, _ = utils.execute('MSBuild.exe {}.vcxproj /m  /p:Configuration={} /p:Platform={platform}'.format(
-            self.name, self.toolchain.config, platform=self.toolchain.platform), self.toolchain.vcvars)
+            self.project.name, self.toolchain.config, platform=self.toolchain.platform), self.toolchain.vcvars)
         if rc != 0:
             raise RuntimeError()
 
@@ -744,7 +758,7 @@ class CXXToolchain(Toolchain):
         filter_project = FilterProject()
 
         toolchain = toolchain if toolchain else self
-        cxx_project = CXXProject(toolchain)
+        cxx_project = CXXProject(project, toolchain)
         cxx_project.tools_version = self.vcvars['VisualStudioVersion']
 
         cxx_project.globals_group.projectname = project.name
@@ -759,7 +773,7 @@ class CXXToolchain(Toolchain):
         libpaths = [libpath.path for libpath in project.libpaths if libpath.matches(toolchain.name)]
 
         if isinstance(project, model.CXXLibrary):
-            cxx_project.config_props.type = 'StaticLibrary'
+            cxx_project.config_props.type = 'DynamicLibrary' if project.shared else 'StaticLibrary'
             cxx_project.lib.subsystem = self.subsystem
 
         if isinstance(project, model.CXXExecutable):
@@ -802,6 +816,7 @@ class CXXToolchain(Toolchain):
 
         cxx_project.write('{}.vcxproj'.format(project.name))
         filter_project.write('{}.vcxproj.filters'.format(project.name))
+        return cxx_project
 
     def transform(self, project):
         cxx_project = self.generate(project)

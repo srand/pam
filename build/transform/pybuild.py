@@ -1,3 +1,14 @@
+##############################################################################
+#
+# (C) 2016 - Robert Andersson - All rights reserved.
+#
+# This file and its contents are the property of Robert Andersson
+# and may not be distributed, copied, or disclosed, in whole or in part,
+# for any reason without written consent of the copyright holder.
+#
+##############################################################################
+
+
 from build import model
 from build.transform import utils
 from build.transform.toolchain import Toolchain
@@ -230,14 +241,17 @@ class CXXToolchain(Toolchain):
         if isinstance(project, model.CXXLibrary):
             objects = cxx_project.objects
             object_names = [obj.product for obj in objects]
-            archiver = toolchain.archiver if hasattr(toolchain, 'archiver') else self.archiver
-            cxx_project.job = archiver.transform(cxx_project, object_names)
+            if project.shared:
+                archiver = toolchain.linker if hasattr(toolchain, 'linker') else self.linker
+            else:
+                archiver = toolchain.archiver if hasattr(toolchain, 'archiver') else self.archiver
+            cxx_project.job = archiver.transform(project, cxx_project, object_names)
 
         if isinstance(project, model.CXXExecutable):
             objects = cxx_project.objects
             object_names = [obj.product for obj in objects]
             linker = toolchain.linker if hasattr(toolchain, 'linker') else self.linker
-            cxx_project.job = linker.transform(cxx_project, object_names)
+            cxx_project.job = linker.transform(project, cxx_project, object_names)
             
         return cxx_project
             
