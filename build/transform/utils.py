@@ -36,11 +36,14 @@ def execute(cmdline, env=os.environ, output=True):
 			self.start()
 
 		def run(self):
-			for line in iter(self.stream.readline, b''):
-				line = line.strip()
-				if self.output:
-					self.output(line)
-				self.buffer.append(line)
+			try:
+				for line in iter(self.stream.readline, b''):
+					line = line.strip()
+					if self.output:
+						self.output("{}", line)
+					self.buffer.append(line)
+			except Exception as e:
+				self.output("{}", str(e))
 
 	stdout = Reader(p.stdout, output=print_locked if output else None)
 	stderr = Reader(p.stderr)

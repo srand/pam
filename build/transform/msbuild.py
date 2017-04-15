@@ -738,7 +738,7 @@ class CXXProject(Project):
         return pg        
 
     def transform(self):
-        rc, _ = utils.execute('MSBuild.exe {}.vcxproj /m  /p:Configuration={} /p:Platform={platform}'.format(
+        rc, stdout, stderr = utils.execute('MSBuild.exe {}.vcxproj /m  /p:Configuration={} /p:Platform={platform}'.format(
             self.project.name, self.toolchain.config, platform=self.toolchain.platform), self.toolchain.vcvars)
         if rc != 0:
             raise RuntimeError()
@@ -764,7 +764,7 @@ class CXXToolchain(Toolchain):
         cxx_project.globals_group.projectname = project.name
         cxx_project.globals_group.projectguid = '{%s}' % project.uuid
         cxx_project.globals_group.platform = self.platform
-        cxx_project.globals_group.windowstargetplatformversion = self.vcvars["WINDOWSSDKVERSION"]
+        cxx_project.globals_group.windowstargetplatformversion = self.vcvars["WINDOWSSDKVERSION"].strip("\\")
 
         def key_value(key, value):
             return key if value is None else "{}={}".format(key, value)
@@ -803,6 +803,8 @@ class CXXToolchain(Toolchain):
         for group in groups:
             tool_sources = {}
             for source in group.sources:
+                if not source.matches(toolchain.name):
+                    continue
                 if source.tool not in tool_sources:
                     tool_sources[source.tool] = []
                 tool_sources[source.tool].append(source)
