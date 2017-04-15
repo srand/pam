@@ -144,7 +144,7 @@ class ProjectConfigurationsItemGroup(ItemGroup):
 
 
 @Attribute('ConfigurationType', varname='type', child=True, values=['Application', 'DynamicLibrary', 'StaticLibrary'])
-@Attribute('PlatformToolset', varname='toolset', child=True, values=['v110', 'v120', 'v110_xp', 'v120_xp', 'v140', 'v140_xp'])
+@Attribute('PlatformToolset', varname='toolset', child=True, values=['v110', 'v120', 'v110_xp', 'v120_xp', 'v140', 'v140_xp', 'v141'])
 @Attribute('CharacterSet', varname='charset', child=True, values=['MultiByte', None])
 @Attribute('PreferredToolArchitecture', varname='tool_architecture', child=True, values=['x64'])
 class CXXConfigurationPropertyGroup(PropertyGroup):
@@ -764,6 +764,7 @@ class CXXToolchain(Toolchain):
         cxx_project.globals_group.projectname = project.name
         cxx_project.globals_group.projectguid = '{%s}' % project.uuid
         cxx_project.globals_group.platform = self.platform
+        cxx_project.globals_group.windowstargetplatformversion = self.vcvars["WINDOWSSDKVERSION"]
 
         def key_value(key, value):
             return key if value is None else "{}={}".format(key, value)

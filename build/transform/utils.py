@@ -24,15 +24,29 @@ def print_locked(format, *args, **kwargs):
 	_lock.release()
 
 
-def execute(cmdline, env=os.environ):
-	p = subprocess.Popen(cmdline, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, env=env)
-	s = []
-	for line in iter(p.stdout.readline, b''):
-		line = line.strip()
-		print_locked(line)
-		s.append(line)
+def execute(cmdline, env=os.environ, output=True):
+	p = subprocess.Popen(cmdline, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env=env)
+
+	class Reader(threading.Thread):
+		def __init__(self, stream, output=None):
+			super(Reader, self).__init__()
+			self.output = output
+			self.stream = stream
+			self.buffer = []
+			self.start()
+
+		def run(self):
+			for line in iter(self.stream.readline, b''):
+				line = line.strip()
+				if self.output:
+					self.output(line)
+				self.buffer.append(line)
+
+	stdout = Reader(p.stdout, output=print_locked if output else None)
+	stderr = Reader(p.stderr)
 	p.wait()
-	return p.returncode, s
+
+	return p.returncode, stdout.buffer, stderr.buffer
 
 
 class Thread(threading.Thread):

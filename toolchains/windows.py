@@ -9,14 +9,16 @@ from build.tools import msvc, clang
 from build.features import FeatureError
 from build.features.msbuild import *
 from build.features.pybuild import *  
-from build.transform.visual_studio import VS12VCVars, VS14VCVars
+from build.transform.visual_studio import VS12VCVars, VS14VCVars, VS15VCVars
 from build.requirement import HostRequirement
 
 
-_win_x86_vs12_env = VS12VCVars(host="x64", target="x86")
-_win_x64_vs12_env = VS12VCVars(host="x64", target="x64")
-_win_x86_vs14_env = VS14VCVars(host="x64", target="x86")
-_win_x64_vs14_env = VS14VCVars(host="x64", target="x64")
+_win_x86_vs12_env = VS12VCVars(arch="amd64_x86")
+_win_x64_vs12_env = VS12VCVars(arch="amd64")
+_win_x86_vs14_env = VS14VCVars(arch="amd64_x86")
+_win_x64_vs14_env = VS14VCVars(arch="amd64")
+_win_x86_vs15_env = VS15VCVars(arch="amd64_x86")
+_win_x64_vs15_env = VS15VCVars(arch="amd64")
 
 
 
@@ -90,6 +92,30 @@ win_x64_vs14_msbuild.add_feature(MSBuildOptimize(), 'optimize')
 
 
 
+win_x86_vs15_msbuild = msbuild.CXXToolchain("windows-x86-msbuild-vs15", platform="Win32", vcvars=_win_x86_vs15_env)
+win_x86_vs15_msbuild.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
+win_x86_vs15_msbuild.add_tool('.cc', msvc.MSBuildCXXCompiler(cxx=True))
+win_x86_vs15_msbuild.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
+win_x86_vs15_msbuild.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
+win_x86_vs15_msbuild.add_feature(MSBuildPlatformToolset(toolset='v141'))
+win_x86_vs15_msbuild.add_requirement(HostRequirement.WINDOWS)
+win_x86_vs15_msbuild.add_feature(FeatureError('c++14 is not supported by vs15'), 'language-c++14')
+win_x86_vs15_msbuild.add_feature(FeatureError('c++17 is not supported by vs15'), 'language-c++17')
+win_x86_vs15_msbuild.add_feature(MSBuildOptimize(), 'optimize')
+
+win_x64_vs15_msbuild = msbuild.CXXToolchain("windows-x64-msbuild-vs15", vcvars=_win_x64_vs15_env)
+win_x64_vs15_msbuild.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
+win_x64_vs15_msbuild.add_tool('.cc', msvc.MSBuildCXXCompiler(cxx=True))
+win_x64_vs15_msbuild.add_tool('.cpp', msvc.MSBuildCXXCompiler(cxx=True))
+win_x64_vs15_msbuild.add_tool('.cxx', msvc.MSBuildCXXCompiler(cxx=True))
+win_x64_vs15_msbuild.add_feature(MSBuildPlatformToolset(toolset='v141'))
+win_x64_vs15_msbuild.add_requirement(HostRequirement.WINDOWS)
+win_x64_vs15_msbuild.add_feature(FeatureError('c++14 is not supported by vs15'), 'language-c++14')
+win_x64_vs15_msbuild.add_feature(FeatureError('c++17 is not supported by vs15'), 'language-c++17')
+win_x64_vs15_msbuild.add_feature(MSBuildOptimize(), 'optimize')
+
+
+
 pam_vs12 = pybuild.CXXToolchain("pam-vs12")
 pam_vs12.add_requirement(HostRequirement.WINDOWS)
 pam_vs12.add_feature(FeatureError('c++11 is not supported by vs12'), 'language-c++11')
@@ -140,6 +166,32 @@ win_x64_vs14.add_tool('.cpp', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x64_vs1
 win_x64_vs14.add_tool('.cxx', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x64_vs14_env))
 win_x64_vs14.archiver = msvc.PyBuildCXXArchiver(env=_win_x64_vs14_env)
 win_x64_vs14.linker = msvc.PyBuildCXXLinker(env=_win_x64_vs14_env)
+
+
+
+pam_vs15 = pybuild.CXXToolchain("pam-vs15")
+pam_vs15.add_requirement(HostRequirement.WINDOWS)
+pam_vs15.add_feature(FeatureError('c++14 is not supported by vs12'), 'language-c++14')
+pam_vs15.add_feature(FeatureError('c++17 is not supported by vs12'), 'language-c++17')
+pam_vs15.add_feature(PyBuildOptimize(PyBuildOptimize.MSVC), 'optimize')
+
+win_x86_vs15 = ToolchainExtender("windows-x86-pam-vs15", pam_vs15)
+win_x86_vs15.add_tool('.S', msvc.PyBuildCXXCompiler(cxx=False, env=_win_x86_vs15_env))
+win_x86_vs15.add_tool('.c', msvc.PyBuildCXXCompiler(cxx=False, env=_win_x86_vs15_env))
+win_x86_vs15.add_tool('.cc', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x86_vs15_env))
+win_x86_vs15.add_tool('.cpp', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x86_vs15_env))
+win_x86_vs15.add_tool('.cxx', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x86_vs15_env))
+win_x86_vs15.archiver = msvc.PyBuildCXXArchiver(env=_win_x86_vs15_env)
+win_x86_vs15.linker = msvc.PyBuildCXXLinker(env=_win_x86_vs15_env)
+
+win_x64_vs15 = ToolchainExtender("windows-x64-pam-vs15", pam_vs15)
+win_x64_vs15.add_tool('.S', msvc.PyBuildCXXCompiler(cxx=False, env=_win_x64_vs15_env))
+win_x64_vs15.add_tool('.c', msvc.PyBuildCXXCompiler(cxx=False, env=_win_x64_vs15_env))
+win_x64_vs15.add_tool('.cc', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x64_vs15_env))
+win_x64_vs15.add_tool('.cpp', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x64_vs15_env))
+win_x64_vs15.add_tool('.cxx', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x64_vs15_env))
+win_x64_vs15.archiver = msvc.PyBuildCXXArchiver(env=_win_x64_vs15_env)
+win_x64_vs15.linker = msvc.PyBuildCXXLinker(env=_win_x64_vs15_env)
 
 
 

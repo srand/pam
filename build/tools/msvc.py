@@ -109,7 +109,7 @@ class PyBuildCXXCompiler(Tool):
         incpaths = ['/I{}'.format(path) for path in cxx_project.incpaths]
         flags = cxx_project.cflags if not self._cxx else cxx_project.cxxflags
 
-        return "{} /nologo {} {} {} /c /T{}{} /Fo{} > nul".format(
+        return "{} /nologo {} {} {} /c /T{}{} /Fo{}".format(
             self._executable, 
             ' '.join(flags),
             ' '.join(definitions),
@@ -185,7 +185,7 @@ class PyBuildCXXLinker(Tool):
 
     def _product(self, project, cxx_project):
         return path.join(cxx_project.output, '{}{}'.format(
-            cxx_project.name, self._output_ext_dll if project.shared else self._output_ext))
+            cxx_project.name, self._output_ext_dll if hasattr(project, "shared") and project.shared else self._output_ext))
 
     def _cmdline(self, project, cxx_project, object_files):
         libpaths = ['/libpath:{}'.format(path) for path in cxx_project.libpaths]
@@ -194,7 +194,7 @@ class PyBuildCXXLinker(Tool):
 
         return "{} /nologo {} {} {} {} {} /out:{}".format(
             self._executable, 
-            '/dll' if project.shared else '',
+            '/dll' if hasattr(project, "shared") and project.shared else '',
             ' '.join(libpaths),
             ' '.join(libraries),
             ' '.join(flags),

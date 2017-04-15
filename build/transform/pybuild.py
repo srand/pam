@@ -163,8 +163,11 @@ class Command(Job):
     def execute(self):
         if self.completed: return
         # utils.print_locked(self._cmdline)
-        rc, stdout = utils.execute(self._cmdline, self._env)
-        if rc != 0: raise RuntimeError('job failed: ' + self._cmdline)
+        rc, stdout, stderr = utils.execute(self._cmdline, self._env, output=False)
+        if rc != 0: 
+            utils.print_locked("\n".join(stdout))
+            utils.print_locked("\n".join(stderr))
+            raise RuntimeError('job failed: ' + self._cmdline)
         self._completed = True
 
 
