@@ -20,6 +20,7 @@ gcc.add_feature(PyBuildCustomCXXFlag('-std=c++11'), 'language-c++11')
 gcc.add_feature(PyBuildCustomCXXFlag('-std=c++14'), 'language-c++14')
 gcc.add_feature(PyBuildCustomCXXFlag('-std=c++17'), 'language-c++17')
 gcc.add_feature(PyBuildOptimize(PyBuildOptimize.GNU), 'optimize')
+gcc.add_feature(PyBuildCustomCXXFlag('-g'), 'debug')
 
 linux = ToolchainExtender("linux-pam-gcc", gcc)
 linux.add_requirement(HostRequirement.LINUX)

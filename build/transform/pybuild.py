@@ -165,8 +165,8 @@ class Command(Job):
         # utils.print_locked(self._cmdline)
         rc, stdout, stderr = utils.execute(self._cmdline, self._env, output=False)
         if rc != 0: 
-            utils.print_locked("\n".join(stdout))
-            utils.print_locked("\n".join(stderr))
+            utils.print_locked("{}", "\n".join(stdout))
+            utils.print_locked("{}", "\n".join(stderr))
             raise RuntimeError('job failed: ' + self._cmdline)
         self._completed = True
 
@@ -215,10 +215,10 @@ class CXXToolchain(Toolchain):
         incpaths = [incpath for incpath in project.incpaths if incpath.matches(toolchain.name)]
         libpaths = [libpath for libpath in project.libpaths if libpath.matches(toolchain.name)]
 
-        if isinstance(project, model.CXXExecutable):
-            macros += [macro for dep in project.dependencies for macro in dep.macros if macro.publish]
-            incpaths += [incpath for dep in project.dependencies for incpath in dep.incpaths if incpath.publish]
-            libpaths += [libpath for dep in project.dependencies for libpath in dep.libpaths if libpath.publish]
+        if isinstance(project, model.CXXLibrary) or isinstance(project, model.CXXExecutable):
+            macros += [macro for dep in project.dependencies for macro in dep.project.macros if dep.matches(toolchain.name) and macro.publish]
+            incpaths += [incpath for dep in project.dependencies for incpath in dep.project.incpaths if dep.matches(toolchain.name) and incpath.publish]
+            libpaths += [libpath for dep in project.dependencies for libpath in dep.project.libpaths if dep.matches(toolchain.name) and libpath.publish]
 
         for macro in macros:
             cxx_project.add_macro(macro.key, macro.value)    
@@ -228,14 +228,16 @@ class CXXToolchain(Toolchain):
             cxx_project.add_libpath(libpath.path)
 
         for dep in project.dependencies:
-            if isinstance(dep, model.CXXLibrary):
-                cxx_project.add_library(dep.name)            
+            if dep.matches(toolchain.name) and isinstance(dep.project, model.CXXLibrary):
+                cxx_project.add_library(dep.project.name)            
 
         cxx_project.toolchain.apply_features(project, cxx_project)            
 
         groups = project.source_groups + [project]
         for group in groups:
             for source in group.sources:
+                if not source.matches(toolchain.name):
+                    continue
                 tool = toolchain.get_tool(source.tool)
                 if tool is None:
                     raise RuntimeError()

@@ -776,13 +776,16 @@ class CXXToolchain(Toolchain):
         if isinstance(project, model.CXXLibrary):
             cxx_project.config_props.type = 'DynamicLibrary' if project.shared else 'StaticLibrary'
             cxx_project.lib.subsystem = self.subsystem
+            macros += [key_value(macro.key, macro.value) for dep in project.dependencies for macro in dep.project.macros if dep.matches(toolchain.name) and macro.publish]
+            incpaths += [incpath.path for dep in project.dependencies for incpath in dep.project.incpaths if dep.matches(toolchain.name) and incpath.publish]
+            libpaths += [libpath.path for dep in project.dependencies for libpath in dep.project.libpaths if dep.matches(toolchain.name) and libpath.publish]
 
         if isinstance(project, model.CXXExecutable):
             cxx_project.config_props.type = 'Application'
-            macros += [key_value(macro.key, macro.value) for dep in project.dependencies for macro in dep.macros if macro.publish]
-            incpaths += [incpath.path for dep in project.dependencies for incpath in dep.incpaths if incpath.publish]
-            libpaths += [libpath.path for dep in project.dependencies for libpath in dep.libpaths if libpath.publish]
-            _libraries = [dep.name for dep in project.dependencies if isinstance(dep, model.CXXLibrary)]
+            macros += [key_value(macro.key, macro.value) for dep in project.dependencies for macro in dep.project.macros if dep.matches(toolchain.name) and macro.publish]
+            incpaths += [incpath.path for dep in project.dependencies for incpath in dep.project.incpaths if dep.matches(toolchain.name) and incpath.publish]
+            libpaths += [libpath.path for dep in project.dependencies for libpath in dep.project.libpaths if dep.matches(toolchain.name) and libpath.publish]
+            _libraries = [dep.project.name for dep in project.dependencies if dep.matches(toolchain.name) and isinstance(dep.project, model.CXXLibrary)]
             libraries  = ['{output}/{lib}/{lib}.lib'.format(output=toolchain.attributes.output, lib=lib) for lib in _libraries]
             libraries += ['d2d1.lib', 'd3d11.lib', 'dxgi.lib', 'windowscodecs.lib; dwrite.lib; dxguid.lib;xaudio2.lib;xinput.lib;mfcore.lib; mfplat.lib; mfreadwrite.lib; mfuuid.lib; %(AdditionalDependencies)']
             cxx_project.link.additionaldependencies = ';'.join(libraries)

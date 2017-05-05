@@ -92,7 +92,7 @@ class PyBuildCXXArchiver(Tool):
 
 
 class PyBuildCXXLinker(Tool):
-    def __init__(self, cxx=False, executable='gcc'):
+    def __init__(self, cxx=False, executable='g++'):
         self._executable = executable
         self._cxx = cxx
         self._output_ext = ''
@@ -109,7 +109,7 @@ class PyBuildCXXLinker(Tool):
         libraries = ['-l{}'.format(path) for path in cxx_project.libraries]
         flags = cxx_project.linkflags
 
-        return "{} {} {} -o {} {} {}".format(
+        return "{} {} {} -o {} {} -Wl,--start-group {} -Wl,--end-group".format(
             self._executable, 
             ' '.join(flags),
             ' '.join(object_files),
@@ -120,12 +120,12 @@ class PyBuildCXXLinker(Tool):
     def _info(self, cxx_project):
         return ' [{}] {}'.format(self._executable.upper(), cxx_project.name)
 
-    def transform(self, cxx_project, object_files):
+    def transform(self, project, cxx_project, object_files):
         product = self._product(cxx_project)
         dir = self._directory(cxx_project, path.dirname(product))
         executable = pybuild.Object(
             product, 
-            self._cmdline(cxx_project, object_files), 
+            self._cmdline(project, cxx_project, object_files), 
             self._info(cxx_project))
         cxx_project.add_job(executable)                            
         cxx_project.add_dependency(executable.product, dir.product)

@@ -59,11 +59,14 @@ available toolchains:
     ProjectLoader(args.file).load()
 
     projects = []
-    for project in args.project:
-        try:
-            projects.append(ProjectRegistry.find(project))
-        except ValueError as e:
-            exit("error: unrecognized project: {}".format(project))
+    if args.project[0] == "all":
+        projects = ProjectRegistry.all()
+    else:
+        for project in args.project:
+            try:
+                projects.append(ProjectRegistry.find(project))
+            except ValueError as e:
+                exit("error: unrecognized project: {}".format(project))
 
     completed = set()
     for project in projects:
@@ -71,8 +74,8 @@ available toolchains:
             completed.add(project)
             for toolchain_name in project.toolchains:
                 for dependency in project.dependencies:
-                    if dependency not in completed:
-                        build(dependency)
+                    if dependency.project not in completed:
+                        build(dependency.project)
                 if not re.search(args.toolchain, toolchain_name):
                     continue
                 try:

@@ -152,7 +152,13 @@ class LibraryPathGroup(object):
         self.libpaths = []
 
     def add_libpath(self, path, filter=None, publish=None):
-        self.libpaths.append(LibraryPath(path, filter, publish)) 
+        self.libpaths.append(LibraryPath(path, filter, publish))
+
+
+class _Dependency(_FilteredAndPublished):
+    def __init__(self, project, filter=None, publish=False):
+        super(_Dependency, self).__init__(filter, publish)
+        self.project = project
 
 
 class DependencyGroup(object):
@@ -161,9 +167,9 @@ class DependencyGroup(object):
         self.dependencies = []
 
     def add_dependency(self, project, filter=None, publish=None):
+        self.dependencies.append(_Dependency(project, filter, publish))
         for dep in project.dependencies:
             self.dependencies.append(dep)
-        self.dependencies.append(project) 
 
 
 class _Feature(_Filtered):
@@ -200,6 +206,10 @@ class ProjectRegistry(object):
         if project not in ProjectRegistry._projects:
             raise ValueError(project) 
         return ProjectRegistry._projects[project]
+
+    @staticmethod
+    def all():
+        return ProjectRegistry._projects.values()
 
 
 class ProjectLoader(Loader):

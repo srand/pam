@@ -55,12 +55,12 @@ def VCVars(version, scripts, *args, **kwargs):
 
 
 def VS12VCVars(*args, **kwargs):
-    scripts = [path.join(environ["VS120COMNTOOLS"], pardir, pardir, "VC", "vcvarsall.bat")]
+    scripts = [path.join(environ["VS120COMNTOOLS"], pardir, pardir, "VC", "vcvarsall.bat")] if "VS120COMNTOOLS" in environ else []
     return VCVars("12.0", scripts, *args, **kwargs)
 
 
 def VS14VCVars(*args, **kwargs):
-    scripts = [path.join(environ["VS140COMNTOOLS"], pardir, pardir, "VC", "vcvarsall.bat")]
+    scripts = [path.join(environ["VS140COMNTOOLS"], pardir, pardir, "VC", "vcvarsall.bat")] if "VS140COMNTOOLS" in environ else []
     return VCVars("14.0", scripts, *args, **kwargs)
 
 
