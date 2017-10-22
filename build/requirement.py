@@ -10,6 +10,7 @@
 
 
 import platform
+import os
 
 
 class Requirement(object):
@@ -34,3 +35,23 @@ class HostRequirement(Requirement):
 HostRequirement.WINDOWS = HostRequirement('Windows')
 HostRequirement.LINUX = HostRequirement('Linux')
 HostRequirement.DARWIN = HostRequirement('Darwin')
+
+
+class PathRequirement(Requirement):
+    def __init__(self, path):
+        super(PathRequirement, self).__init__()
+        self.path = [path] if type(path) != list else path
+
+    @property
+    def satisfied(self):
+        return any([os.path.exists(path) for path in self.path])
+
+
+class EnvRequirement(Requirement):
+    def __init__(self, env):
+        super(EnvRequirement, self).__init__()
+        self.env = env
+
+    @property
+    def satisfied(self):
+        return os.getenv(self.env)

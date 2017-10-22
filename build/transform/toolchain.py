@@ -39,8 +39,8 @@ class ToolchainRegistry(object):
 
     @staticmethod
     def this_system():
-        return [tc for tc in ToolchainRegistry._toolchains.values() if re.search(platform.system().lower(), tc.name)]
-
+        return [tc for tc in ToolchainRegistry._toolchains.values() 
+                if re.search(platform.system().lower(), tc.name) and tc.supported]
 
 class ToolchainLoader(Loader):
     def __init__(self, path):

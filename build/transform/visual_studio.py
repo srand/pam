@@ -24,6 +24,10 @@ def VCVars(version, scripts, *args, **kwargs):
                 self.env = self._initialize()
             return self.env[item]
 
+        @property
+        def _scripts(self):
+            return scripts
+
         def _initialize(self):
             for script in scripts:
                 if path.exists(script):
