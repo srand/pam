@@ -765,7 +765,6 @@ class CXXProject(Project):
         self.clcompile.preprocessordefinitions = ";".join(self._macros)
     
     def add_incdir(self, path):
-        print(path)
         self._incdir.append(path)
         self.clcompile.additionalincludedirectories = ";".join(self._incdir)
 

@@ -160,7 +160,7 @@ class LibraryPathGroup(object):
         self.libpaths = []
 
     def add_libpath(self, path, filter=None, publish=None):
-        self.libpaths.append(LibraryPath(path, filter, publish))
+        self.libpaths.append(_LibraryPath(path, filter, publish))
     
 
 def has_libpaths(project):
