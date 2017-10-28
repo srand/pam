@@ -14,11 +14,14 @@ import pybuild
 import os
 
 class CXXProject(pybuild.CXXProject):
-    def __init__(self, toolchain, name):
-        super(CXXProject).__init__()
+    def __init__(self, toolchain, name, vcvars):
+        super(CXXProject).__init__(toolchain, name)
+        self.vcvars
 
     def transform(self):
-        pass
+        rc, _ = utils.execute('nmake.exe /nologo {}.nmake '.format(self.name), self.vcvars)
+        if rc != 0:
+            raise RuntimeError()
 
 
 class CXXToolchain(pybuild.CXXToolchain):
@@ -26,7 +29,7 @@ class CXXToolchain(pybuild.CXXToolchain):
         super(CXXToolchain, self).__init__(name)
         self.vcvars = vcvars
         
-    def generate(self, project):
+    def generate(self, project, toolchain):
         cxx_project = super(CXXToolchain, self).generate(project)
         with open('{}.nmake'.format(project.name), 'w') as f:
             f.write('all: {}\n\n'.format(cxx_project.job.product))
@@ -35,10 +38,9 @@ class CXXToolchain(pybuild.CXXToolchain):
                 f.write('\t@echo {info}\n'.format(info=cmd.info))
                 f.write('\t@{cmdline}\n'.format(cmdline=cmd.cmdline))
                 f.write('\n')
+        return CXXProject(toolchain, project.name)
         
-    def transform(self, project):
-        cxx_project = self.generate(project)
-        rc, _ = utils.execute('nmake.exe /nologo {}.nmake '.format(project.name), self.vcvars)
-        if rc != 0:
-            raise RuntimeError()
+        
+    def transform(self, project, toolchain):
+        self.generate(project, toolchain).transform()
         

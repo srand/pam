@@ -691,7 +691,8 @@ class CXXProject(Project):
         super(CXXProject, self).__init__()
         self.project = project
         self.toolchain = toolchain
-
+        self.tools_version = toolchain.vcvars['VisualStudioVersion']
+        
         self.configs_group = ProjectConfigurationsItemGroup()
         self.globals_group = CXXPropertyGroup('Globals')
         self.globals_group.platform = "Win32"
@@ -713,6 +714,26 @@ class CXXProject(Project):
         self.definitions_group.append(self.clcompile)        
         self.lib = self.definitions_group.create_lib()
         self.link = self.definitions_group.create_link()
+        self.link.subsystem = toolchain.subsystem
+
+        if isinstance(project, model.CXXLibrary):
+            self.config_props.type = 'DynamicLibrary' if project.shared else 'StaticLibrary'
+        if isinstance(project, model.CXXExecutable):
+            self.config_props.type = 'Application'
+        
+        self.globals_group.projectname = project.name
+        self.globals_group.projectguid = '{%s}' % project.uuid
+        self.globals_group.platform = toolchain.platform
+        self.globals_group.windowstargetplatformversion = toolchain.vcvars["WINDOWSSDKVERSION"].strip("\\")
+        self.clcompile.trackerlogdirectory = "$(IntDir)"
+        self.properties_group.intdir = "{}/{}/".format(toolchain.attributes.output, project.name)
+        self.properties_group.outdir = "{}/{}/".format(toolchain.attributes.output, project.name)
+        self.properties_group.targetpath = "$(OutDir)$(TargetName)$(TargetExt)"
+        
+        self._macros = []
+        self._incdir = []
+        self._libdir = []
+        self._deps = []
 
     def create_projectconfiguration(self, config_name, platform):
         return self.configs_group.create_projectconfiguration(config_name, platform)
@@ -737,6 +758,25 @@ class CXXProject(Project):
         self.getroot().insert(-1, pg)
         return pg        
 
+    def add_macro(self, key, value=None):
+        def key_value(key, value):
+            return "{}".format(key) if value is None else "{}={}".format(key, value)
+        self._macros.append(key_value(key, value))
+        self.clcompile.preprocessordefinitions = ";".join(self._macros)
+    
+    def add_incdir(self, path):
+        print(path)
+        self._incdir.append(path)
+        self.clcompile.additionalincludedirectories = ";".join(self._incdir)
+
+    def add_libdir(self, path):
+        self._libdir.append(path)
+        self.clcompile.additionallibrarydirectories = ";".join(self._libdir)
+
+    def add_dependency(self, dep):
+        self._deps.append(dep)
+        self.link.additionaldependencies = ";".join(self._deps + ["%(AdditionalDependencies)"])
+
     def transform(self):
         rc, stdout, stderr = utils.execute('MSBuild.exe {}.vcxproj /m  /p:Configuration={} /p:Platform={platform}'.format(
             self.project.name, self.toolchain.config, platform=self.toolchain.platform), self.toolchain.vcvars)
@@ -755,52 +795,12 @@ class CXXToolchain(Toolchain):
         self.subsystem = 'Console'
 
     def generate(self, project, toolchain=None):
-        filter_project = FilterProject()
-
         toolchain = toolchain if toolchain else self
+
         cxx_project = CXXProject(project, toolchain)
-        cxx_project.tools_version = self.vcvars['VisualStudioVersion']
-
-        cxx_project.globals_group.projectname = project.name
-        cxx_project.globals_group.projectguid = '{%s}' % project.uuid
-        cxx_project.globals_group.platform = self.platform
-        cxx_project.globals_group.windowstargetplatformversion = self.vcvars["WINDOWSSDKVERSION"].strip("\\")
-
-        def key_value(key, value):
-            return key if value is None else "{}={}".format(key, value)
-
-        macros = [key_value(macro.key, macro.value) for macro in project.macros if macro.matches(toolchain.name)]
-        incpaths = [incpath.path for incpath in project.incpaths if incpath.matches(toolchain.name)]
-        libpaths = [libpath.path for libpath in project.libpaths if libpath.matches(toolchain.name)]
-
-        if isinstance(project, model.CXXLibrary):
-            cxx_project.config_props.type = 'DynamicLibrary' if project.shared else 'StaticLibrary'
-            cxx_project.lib.subsystem = self.subsystem
-            macros += [key_value(macro.key, macro.value) for dep in project.dependencies for macro in dep.project.macros if dep.matches(toolchain.name) and macro.publish]
-            incpaths += [incpath.path for dep in project.dependencies for incpath in dep.project.incpaths if dep.matches(toolchain.name) and incpath.publish]
-            libpaths += [libpath.path for dep in project.dependencies for libpath in dep.project.libpaths if dep.matches(toolchain.name) and libpath.publish]
-
-        if isinstance(project, model.CXXExecutable):
-            cxx_project.config_props.type = 'Application'
-            macros += [key_value(macro.key, macro.value) for dep in project.dependencies for macro in dep.project.macros if dep.matches(toolchain.name) and macro.publish]
-            incpaths += [incpath.path for dep in project.dependencies for incpath in dep.project.incpaths if dep.matches(toolchain.name) and incpath.publish]
-            libpaths += [libpath.path for dep in project.dependencies for libpath in dep.project.libpaths if dep.matches(toolchain.name) and libpath.publish]
-            _libraries = [dep.project.name for dep in project.dependencies if dep.matches(toolchain.name) and isinstance(dep.project, model.CXXLibrary)]
-            libraries  = ['{output}/{lib}/{lib}.lib'.format(output=toolchain.attributes.output, lib=lib) for lib in _libraries]
-            libraries += ['d2d1.lib', 'd3d11.lib', 'dxgi.lib', 'windowscodecs.lib; dwrite.lib; dxguid.lib;xaudio2.lib;xinput.lib;mfcore.lib; mfplat.lib; mfreadwrite.lib; mfuuid.lib; %(AdditionalDependencies)']
-            cxx_project.link.additionaldependencies = ';'.join(libraries)
-            cxx_project.link.additionallibrarydirectories = ';'.join(libpaths)
-            cxx_project.link.subsystem = self.subsystem
-
-        cxx_project.clcompile.additionalincludedirectories = ';'.join(incpaths)
-        cxx_project.clcompile.preprocessordefinitions = ';'.join(macros)
-        cxx_project.clcompile.trackerlogdirectory = "$(IntDir)"
-
-        cxx_project.properties_group.intdir = "{}/{}/".format(self.attributes.output, project.name)
-        cxx_project.properties_group.outdir = "{}/{}/".format(self.attributes.output, project.name)
-        cxx_project.properties_group.targetpath = "$(OutDir)$(TargetName)$(TargetExt)"
-
         toolchain.apply_features(project, cxx_project)
+
+        filter_project = FilterProject()
 
         groups = project.source_groups + [project]
         for group in groups:
@@ -922,7 +922,8 @@ class CSToolchain(Toolchain):
                     pr.include = '{}.csproj'.format(dep.name)
                     pr.name = dep.name
                     pr.project = '{%s}' % dep.uuid
-                    cs_project.globals.referencepath += os.path.join(os.getcwd(), "{}/{}/bin".format(self.attributes.output, dep.name))
+                    cs_project.globals.referencepath += os.path.join(
+                        os.getcwd(), "{}/{}/bin".format(self.attributes.output, dep.name))
                     self.generate(dep)
                     
 

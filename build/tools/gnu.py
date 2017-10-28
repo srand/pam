@@ -28,19 +28,13 @@ class PyBuildCXXCompiler(Tool):
         return '{output}/{}{}'.format(source_file, self._output_ext, output=cxx_project.output)
 
     def _cmdline(self, cxx_project, source_file):
-        def key_value(key, value):
-            return "{}".format(key) if value is None else "{}={}".format(key, value)
-		
-        definitions = ['-D{}'.format(key_value(key, value)) for key, value in cxx_project.macros ]
         incpaths = ['-I{}'.format(path) for path in cxx_project.incpaths]
         flags = cxx_project.cflags if not self._cxx else cxx_project.cxxflags
 
-        return "{} -x {} {} {} {} -c {} -o {}".format(
+        return "{} -x {} {} -c {} -o {}".format(
             self._executable,
             'c++' if self._cxx else 'c', 
             ' '.join(flags),
-            ' '.join(definitions),
-            ' '.join(incpaths),
             source_file, 
             self._product(cxx_project, source_file))
 
@@ -58,6 +52,7 @@ class PyBuildCXXCompiler(Tool):
         cxx_project.add_job(obj)
         cxx_project.add_dependency(obj.product, source_file.path)
         cxx_project.add_dependency(obj.product, dir.product)
+        return obj
 
 
 class PyBuildCXXArchiver(Tool):
@@ -89,6 +84,7 @@ class PyBuildCXXArchiver(Tool):
         cxx_project.add_dependency(library.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(library.product, obj)
+        return library
 
 
 class PyBuildCXXLinker(Tool):
@@ -131,3 +127,4 @@ class PyBuildCXXLinker(Tool):
         cxx_project.add_dependency(executable.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(executable.product, obj)
+        return executable

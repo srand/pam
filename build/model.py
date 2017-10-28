@@ -122,7 +122,11 @@ class MacroGroup(object):
         If **publish** is True, the macro will be inherited to projects
         depending on the project to which this group belongs.  
         """
-        self.macros.append(_Macro(macro, value, filter, publish)) 
+        self.macros.append(_Macro(macro, value, filter, publish))
+
+
+def has_macros(project):
+    return isinstance(project, MacroGroup)
 
 
 class _IncludePath(_FilteredAndPublished):
@@ -140,6 +144,10 @@ class IncludePathGroup(object):
         self.incpaths.append(_IncludePath(path, filter, publish)) 
 
 
+def has_incpaths(project):
+    return isinstance(project, IncludePathGroup)
+
+
 class _LibraryPath(_FilteredAndPublished):
     def __init__(self, path, filter=None, publish=None):
         super(_LibraryPath, self).__init__(filter, publish)
@@ -153,6 +161,10 @@ class LibraryPathGroup(object):
 
     def add_libpath(self, path, filter=None, publish=None):
         self.libpaths.append(LibraryPath(path, filter, publish))
+    
+
+def has_libpaths(project):
+    return isinstance(project, LibraryPathGroup)
 
 
 class _Dependency(_FilteredAndPublished):
@@ -235,6 +247,10 @@ class Project(SourceGroup, FeatureGroup):
     def toolchains(self):
         return [toolchain for group in self._toolchain_groups for toolchain in group.toolchains]
 
+    @property
+    def is_toolchain_agnostic(self):
+        return False
+    
     def new_source_group(self, name):
         group = SourceGroup(name)
         self.source_groups.append(group)
@@ -287,14 +303,47 @@ class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryPathGroup, Depend
         for macro in macro_group.macros:
             self.macros.append(macro)
 
-    def add_include_path_group(self, include_path_group):
+    def add_incpath_group(self, include_path_group):
         for include_path in include_path_group.incpaths:
             self.incpaths.append(include_path)
 
-    def add_library_path_group(self, library_path_group):
+    def add_libpath_group(self, library_path_group):
         for library_path in library_path_group.libpaths:
             self.libpaths.append(library_path)
 
+    def get_macros(self, toolchain=None, inherited=False):
+        macros = [] + self.macros
+        if inherited:
+            for dep in self.dependencies:
+                if hasattr(dep.project, "macros"):
+                    macros += [macro for macro in dep.project.macros if macro.publish]
+        return macros if toolchain is None else \
+            [macro for macro in macros if macro.matches(toolchain.name)]
+
+    def get_incpaths(self, toolchain=None, inherited=False):
+        incpaths = [] + self.incpaths
+        if inherited:
+            for dep in self.dependencies:
+                if hasattr(dep.project, "incpaths"):
+                    incpaths += [path for path in dep.project.incpaths if path.publish]
+        return incpaths if toolchain is None else \
+            [incpath for incpath in incpaths if incpath.matches(toolchain.name)]
+
+    def get_libpaths(self, toolchain=None, inherited=False):
+        libpaths = [] + self.libpaths
+        if inherited:
+            for dep in self.dependencies:
+                if hasattr(dep.project, "libpaths"):
+                    libpaths += [path for path in dep.project.libpaths if path.publish]
+        return libpaths if toolchain is None else \
+            [libpath for libpath in libpaths if libpath.matches(toolchain.name)]
+
+    def get_dependencies(self, toolchain=None):
+        deps = [] + self.dependencies
+        return deps if toolchain is None else \
+            [dep for dep in deps if dep.matches(toolchain.name)]
+
+            
 
 class CXXLibrary(CXXProject):
     def __init__(self, name, shared=False):
@@ -303,6 +352,75 @@ class CXXLibrary(CXXProject):
         self.shared = shared
 
 
+class CXXExternal(CXXProject):
+    def __init__(self, name, shared=False):
+        """ External dependency """
+        super(CXXExternal, self).__init__(name)
+        self.shared = shared
+
+
 class CXXExecutable(CXXProject):
     def __init__(self, name):
+        """ Initialized a new C++ native executable project called **name** """
         super(CXXExecutable, self).__init__(name)
+
+
+"""
+import urllib
+import sys
+import shutil
+import zipfile
+import tarfile
+
+
+class PythonProject(Project):
+    def __init__(self, name):
+        super(PythonProject, self).__init__(name)
+
+    @property
+    def is_toolchain_agnostic(self):
+        return True
+
+
+class URLPackage(PythonProject, DependencyGroup):
+    def __init__(self, name, url):
+        super(URLPackage, self).__init__(name)
+        self.url = url
+        self.add_toolchain
+
+    def _report(self, *args, **kwargs):
+        sys.stdout.write(".")
+        sys.stdout.flush()
+
+    def _extract_zip(self, filename):
+        with zipfile.ZipFile(filename) as zf:
+            zf.extractall(self._location())
+
+    def _extract_tar(self, filename):
+        with tarfile.open(filename) as zf:
+            zf.extractall(self._location())
+
+    def _location(self):
+        return "output/{}".format(self.name)
+            
+    def transform(self, toolchain):
+        if os.path.exists(self._location()):
+            return
+        
+        print "Downloading...",
+        filename, headers = urllib.urlretrieve(self.url, reporthook=self._report)
+        print(filename)
+
+        extractors = {
+            ".zip": self._extract_zip,
+            ".tar.gz": self._extract_tar,
+            ".tgz": self._extract_tar,
+            ".gz": self._extract_tar
+        }
+
+        _, ext = os.path.splitext(filename)
+        if ext not in extractors:
+            raise RuntimeError("unrecognized file format: {}".format(ext))
+
+        extractors[ext](filename)
+"""

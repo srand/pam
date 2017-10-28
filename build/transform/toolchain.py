@@ -76,12 +76,12 @@ class Toolchain(object):
             name, args = feature.name, feature.args
             feature = self._features_with_name.get(name)
             if feature:
-                feature.transform(project, transformed_project, **args)
+                feature.transform(project, transformed_project, self, **args)
 
     def apply_features(self, project, transformed_project):
         # Apply toolchain features
         for feature in self._features:
-            feature.transform(project, transformed_project)
+            feature.transform(project, transformed_project, self)
         # Apply project features
         for feature in project.features:
             self.apply_feature(project, transformed_project, feature)

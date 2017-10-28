@@ -36,7 +36,7 @@ class ModelTest(unittest.TestCase):
             lib.add_macro('MACRO_PUBLISHED', publish=True)
             lib.add_macro('MACRO')
             lib.add_macro('UNMATCHED', filter='never-matched')
-            lib.add_macro('MATCHED', filter='(windows|linux|mac)')
+            lib.add_macro('MATCHED', filter='(windows|linux|mac|pam|msbuild|make)')
             lib.add_sources('test/src/test_cxx_macros.cpp')
             lib.transform(toolchain)
 

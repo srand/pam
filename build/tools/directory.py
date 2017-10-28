@@ -15,14 +15,14 @@ import platform
 from os import path
 
 
-class _Directory(pybuild.Command):
+class Directory(pybuild.Command):
     def __init__(self, dirname):
         if platform.system() == "Windows":
             cmdline = "cmd /c if not exist \"{dir}\" mkdir \"{dir}\"".format(dir=dirname)
         else:
             cmdline = "mkdir -p \"{dir}\"".format(dir=dirname)
         info = ' [MKDIR] {}'.format(dirname)
-        super(_Directory, self).__init__(dirname, cmdline, info)
+        super(Directory, self).__init__(dirname, cmdline, info)
 
     @property
     def required(self):
@@ -40,6 +40,6 @@ class PyBuildDirectoryCreator(Tool):
     def transform(self, cxx_project, dirname):
         job = cxx_project.get_job(dirname)
         if not job:
-            job = _Directory(dirname)
+            job = Directory(dirname)
             cxx_project.add_job(job)
         return job

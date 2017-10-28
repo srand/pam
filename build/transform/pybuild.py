@@ -129,6 +129,9 @@ class Job(object):
 
     def add_dependency(self, job):
         self._deps[job.product] = job
+
+    def get_dependency(self, name):
+        return self._deps[name]
         
     def dependencies(self):
         return self._deps.keys()
@@ -210,27 +213,6 @@ class CXXToolchain(Toolchain):
     def generate(self, project, toolchain=None):
         toolchain = toolchain if toolchain else self
         cxx_project = CXXProject(toolchain, project.name)
-        
-        macros = [macro for macro in project.macros if macro.matches(toolchain.name)]
-        incpaths = [incpath for incpath in project.incpaths if incpath.matches(toolchain.name)]
-        libpaths = [libpath for libpath in project.libpaths if libpath.matches(toolchain.name)]
-
-        if isinstance(project, model.CXXLibrary) or isinstance(project, model.CXXExecutable):
-            macros += [macro for dep in project.dependencies for macro in dep.project.macros if dep.matches(toolchain.name) and macro.publish]
-            incpaths += [incpath for dep in project.dependencies for incpath in dep.project.incpaths if dep.matches(toolchain.name) and incpath.publish]
-            libpaths += [libpath for dep in project.dependencies for libpath in dep.project.libpaths if dep.matches(toolchain.name) and libpath.publish]
-
-        for macro in macros:
-            cxx_project.add_macro(macro.key, macro.value)    
-        for incpath in incpaths:
-            cxx_project.add_incpath(incpath.path)    
-        for libpath in libpaths:
-            cxx_project.add_libpath(libpath.path)
-
-        for dep in project.dependencies:
-            if dep.matches(toolchain.name) and isinstance(dep.project, model.CXXLibrary):
-                cxx_project.add_library(dep.project.name)            
-
         cxx_project.toolchain.apply_features(project, cxx_project)            
 
         groups = project.source_groups + [project]
