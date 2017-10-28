@@ -82,7 +82,9 @@ class _MSBuildProjectDeps(Feature):
     def transform(self, project, cxx_project, toolchain, **kwargs):
         for dep in project.get_dependencies(toolchain):
             if isinstance(dep.project, CXXLibrary):
-                cxx_project.add_dependency('{output}/{lib}/{lib}.lib'.format(
+                cxx_project.add_libdir('{output}/{lib}'.format(
+                    output=toolchain.attributes.output, lib=dep.project.name))
+                cxx_project.add_dependency('{lib}.lib'.format(
                     output=toolchain.attributes.output, lib=dep.project.name))
 
 

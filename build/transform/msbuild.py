@@ -729,7 +729,7 @@ class CXXProject(Project):
         self.properties_group.intdir = "{}/{}/".format(toolchain.attributes.output, project.name)
         self.properties_group.outdir = "{}/{}/".format(toolchain.attributes.output, project.name)
         self.properties_group.targetpath = "$(OutDir)$(TargetName)$(TargetExt)"
-        
+
         self._macros = []
         self._incdir = []
         self._libdir = []
@@ -771,7 +771,7 @@ class CXXProject(Project):
 
     def add_libdir(self, path):
         self._libdir.append(path)
-        self.clcompile.additionallibrarydirectories = ";".join(self._libdir)
+        self.link.additionallibrarydirectories = ";".join(self._libdir)
 
     def add_dependency(self, dep):
         self._deps.append(dep)
