@@ -2,7 +2,10 @@
 PAM - Pun At Make
 =======================
 
-PAM is a portable build tool capable of building C/C++ and C# projects, either through its own build engine or by utilizing third party tools such as MSBuild, Xcode and Make. Projects are defined in Python scripts.
+PAM is a portable build tool capable of building C/C++ projects, either through its own build engine or by utilizing third party tools such as MSBuild, Xcode and Make. Projects are defined in Python scripts. 
+
+A key differentiator for PAM is the abstraction and removal of traditional toolchain attributes from projects. In PAM, the toolchain is in fact a project attribute in its own right. This enables a single 
+project to be built using multiple toolchains in different configurations. For example, a project can be built for x86, ARM and MIPS simultaneously, in 32- and 64-bit, debug and release configurations. It's all up to you.
 
 Installing
 ----------
