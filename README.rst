@@ -41,31 +41,40 @@ Second Project
 --------------
 Let's get real and have a closer look at the project API and what PAM is capable of. This time we're creating a library and linking it into an executable.
 ::
-  from build.model import CXXLibrary, CXXExecutable, ToolchainGroup
-
-  # A toolchain group is a convenient way of using the same set of 
-  # toolchains in multiple projects.
-  toolchains = ToolchainGroup()
-  toolchains.add_toolchain('linux-x64-pam-gcc')
-  toolchains.add_toolchain('macosx-x64-pam-gcc')
-  toolchains.add_toolchain('windows-x64-msbuild-vs14')
+  from build.model import *
+  from externals.googletest import googletest
   
-  # Let's build a very commonly used library, zlib. 
-  zlib = CXXLibrary('zlib')
-
-  # We add sources to the project by collecting all .c files from the zlib 
-  # directory. Sources are automatically paired with matching tools through 
-  # their file extensions. If an unconventional file extension is used, a tool 
-  # may be selected explicitly with the tool attribute. For example, to build 
-  # C code as C++, add: tool='.cpp'
-  zlib.add_sources('zlib', r'.*\.c$')
-
+  # A toolchain set is a convenient way of using the same set of 
+  # toolchains in multiple projects. A commonly used toolchain
+  # is added for each supported platform.
+  toolchains = ToolchainGroup()
+  toolchains.add_toolchain("windows-x64-msbuild-vs15")
+  toolchains.add_toolchain("linux-x64-pam-gcc")
+  toolchains.add_toolchain("macosx-x64-pam-clang")
+  
+  # Similarly, use a shared set of features for all projects
+  features = FeatureGroup()
+  # We are compiling c++11 code
+  features.use_feature("language-c++11")
+  # and want optimized code
+  features.use_feature("optimize", level="full")
+  
+  # Build a hello world library
+  hello_lib = CXXLibrary("hello")
+  
+  # Collect and compile all files in the "src" directory.
+  # Sources are automatically paired with matching tools through 
+  # their file extensions. If an unconventional file extension is used,
+  # a tool may be selected explicitly with the tool attribute.
+  # For example, to build C code as C++, add: tool='.cpp'
+  hello_lib.add_sources("src")
+  
   # Next we add an include path so that the library's headers can be found. 
   # When the publish attribute is set to true, the path will be inherited by 
-  # all projects that depend on zlib. That way downstream projects won't be 
+  # all projects that depend on 'hello'. That way downstream projects won't be 
   # affected if the path changes in the future.
-  zlib.add_incpath('zlib', publish=True)
-
+  hello_lib.add_incpath("include", publish=True)
+  
   # The library also needs a few macros set depending on the target operating 
   # system. We can selectively set macros using the filter attribute. A filter 
   # is basically a regex matched against the name of the toolchain used. 
@@ -74,39 +83,43 @@ Let's get real and have a closer look at the project API and what PAM is capable
   # Filters can also be used when adding sources, include paths and other 
   # items. We can also publish these macros to dependent projects by setting 
   # the publish attribute, but in this case there is no need to.
-  zlib.add_macro('WINDOWS', filter='windows')
-  zlib.add_macro('LINUX', filter='linux')
-  zlib.add_macro('DARWIN', filter='macosx')
-
-  # Compile code according to ANSI C89
-  zlib.use_feature('language-c89')
-
-  # Optimize the generated code 
-  zlib.use_feature('optimize', level='full')
-
+  hello_lib.add_macro("WINDOWS", filter="windows")
+  hello_lib.add_macro("LINUX", filter="linux")
+  hello_lib.add_macro("MACOSX", filter="macosx")
+  
+  # Add the set of features we want to enable for the library.
+  hello_lib.add_feature_group(features)
+  
   # Add the set of toolchains we want to use to build the library.
-  zlib.add_toolchain_group(toolchains)
+  hello_lib.add_toolchain_group(toolchains)
+  
+  
+  # Build a test executable
+  hello_test = CXXExecutable("hello_test")
+  # It depends on the hello library 
+  hello_test.add_dependency(hello_lib)
+  
+  # ... and GoogleTest which is an external and imported project.
+  # PAM has builtin recepies for googletest and will download and
+  # build the library source automatically.
+  hello_test.add_dependency(googletest)
+  
+  # Add test source code
+  hello_test.add_sources("test")
+  
+  # And our features and toolchains
+  hello_test.add_feature_group(features)
+  hello_test.add_toolchain_group(toolchains)
+  
+  # Also add our toolchains to googletest.
+  googletest.add_toolchain_group(toolchains)
 
 
-  # Let's utilize the zlib library by building the zpipe example found in 
-  # the zlib tarball.
-  zpipe = CXXExecutable('zpipe')
-
-  # Add sources
-  zpipe.add_sources('zlib/examples/zpipe.c')
-
-  # Add a dependency to the library
-  zpipe.add_dependency(zlib)
-
-  # Add the toolchains to use
-  zpipe.add_toolchain_group(toolchains)
-
-
-We can now build the zpipe utility program:
+This project is availble as an example in the repository. To build it, run:
 ::
-  $ pam zpipe
+  $ cd examples/hello && pam hello_test
 
-PAM will automatically only use toolchains which are supported on the current host machine.
+PAM will automatically select the toolchain supported on your current host machine.
 
 Toolchains
 ----------
@@ -116,6 +129,8 @@ The following builtin toolchains are available:
 - linux-arm-pam-gcc
 - linux-x64-pam-gcc
 - linux-x86-pam-gcc
+- linux-x64-make-gcc
+- linux-x86-make-gcc
 - macosx-pam-clang
 - macosx-x64-pam-clang
 - macosx-x86-pam-clang
@@ -127,15 +142,19 @@ The following builtin toolchains are available:
 - windows-store-x86-msbuild-vs14
 - windows-x64-msbuild-vs12
 - windows-x64-msbuild-vs14
+- windows-x64-msbuild-vs15
 - windows-x64-nmake-vs14
 - windows-x64-pam-clang-vs14
 - windows-x64-pam-vs12
 - windows-x64-pam-vs14
+- windows-x64-pam-vs15
 - windows-x86-msbuild-vs12
 - windows-x86-msbuild-vs14
+- windows-x86-msbuild-vs15
 - windows-x86-nmake-vs14
 - windows-x86-pam-clang-vs14
 - windows-x86-pam-vs12
+- windows-x86-pam-vs14
 - windows-x86-pam-vs14
 
 Frequently Asked Questions

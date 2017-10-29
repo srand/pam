@@ -36,9 +36,21 @@ breakpad_client_srclist = [
 ]
 
 breakpad_client_linux_srcgrp = SourceGroup()
+"""
 for srcfile in breakpad_client_srclist:
     breakpad_client_linux_srcgrp.add_sources(
         "output/breakpad-source/{}".format(srcfile), filter="linux")
+"""
+breakpad_client_linux_srcgrp.add_sources(
+    "output/breakpad-source/src/processor", "(?!.*unittest.cc$)(.*\.(cc|c|S)$)", filter="linux")
+breakpad_client_linux_srcgrp.add_sources(
+    "output/breakpad-source/src/client", "(?!.*test.cc$)(.*\.(cc|c|S)$)", filter="linux")
+breakpad_client_linux_srcgrp.add_sources(
+    "output/breakpad-source/src/client/linux", "(?!.*test.cc$)(.*\.(cc|c|S)$)", filter="linux", recurse=True)
+breakpad_client_linux_srcgrp.add_sources(
+    "output/breakpad-source/src/common", "(?!.*unittest.cc$)(.*\.(cc|c|S)$)", filter="linux")
+breakpad_client_linux_srcgrp.add_sources(
+    "output/breakpad-source/src/common/linux", "(?!.*test.cc$)(.*\.(cc|c|S)$)", filter="linux")
 
 breakpad_client = CXXLibrary("breakpad_client")
 breakpad_client.add_dependency(source)
@@ -47,6 +59,7 @@ breakpad_client.add_incpath("output/breakpad-source/src", publish=True)
 breakpad_client.add_incpath("output/breakpad-lss-source", publish=True)
 breakpad_client.add_source_group(breakpad_client_linux_srcgrp)
 breakpad_client.use_feature("language-c++11")
+breakpad_client.add_macro("HAVE_A_OUT_H", filter="linux")
 
 core2md = CXXExecutable("core2md")
 core2md.add_dependency(source)

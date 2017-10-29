@@ -9,6 +9,7 @@ googletest.add_dependency(source)
 googletest.add_incpath("output/googletest-source/googletest/include", publish=True)
 googletest.add_incpath("output/googletest-source/googletest/")
 googletest.add_sources("output/googletest-source/googletest/src/gtest-all.cc")
+googletest.add_library("pthread", filter="linux", publish=True)
 
 googlemock = CXXLibrary("googlemock")
 googlemock.add_dependency(source)

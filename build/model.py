@@ -346,8 +346,8 @@ class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryGroup, LibraryPat
         macros = [] + self.macros
         if inherited:
             for dep in self.dependencies:
-                if hasattr(dep.project, "macros"):
-                    macros += [macro for macro in dep.project.macros if macro.publish]
+                if hasattr(dep.project, "get_macros"):
+                    macros += [macro for macro in dep.project.get_macros(toolchain, inherited) if macro.publish]
         return macros if toolchain is None else \
             [macro for macro in macros if macro.matches(toolchain.name)]
 
@@ -355,8 +355,8 @@ class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryGroup, LibraryPat
         incpaths = [] + self.incpaths
         if inherited:
             for dep in self.dependencies:
-                if hasattr(dep.project, "incpaths"):
-                    incpaths += [path for path in dep.project.incpaths if path.publish]
+                if hasattr(dep.project, "get_incpaths"):
+                    incpaths += [path for path in dep.project.get_incpaths(toolchain, inherited) if path.publish]
         return incpaths if toolchain is None else \
             [incpath for incpath in incpaths if incpath.matches(toolchain.name)]
 
@@ -364,8 +364,8 @@ class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryGroup, LibraryPat
         libraries = [] + self.libraries
         if inherited:
             for dep in self.dependencies:
-                if hasattr(dep.project, "libpaths"):
-                    libraries += [lib for lib in dep.project.libraries if lib.publish]
+                if hasattr(dep.project, "get_libraries"):
+                    libraries += [lib for lib in dep.project.get_libraries(toolchain, inherited) if lib.publish]
         return libraries if toolchain is None else \
             [lib for lib in libraries if lib.matches(toolchain.name)]
     
@@ -373,8 +373,8 @@ class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryGroup, LibraryPat
         libpaths = [] + self.libpaths
         if inherited:
             for dep in self.dependencies:
-                if hasattr(dep.project, "libpaths"):
-                    libpaths += [path for path in dep.project.libpaths if path.publish]
+                if hasattr(dep.project, "get_libpaths"):
+                    libpaths += [path for path in dep.project.get_libpaths(toolchain, inherited) if path.publish]
         return libpaths if toolchain is None else \
             [libpath for libpath in libpaths if libpath.matches(toolchain.name)]
 
