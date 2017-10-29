@@ -65,6 +65,19 @@ class MSBuildProjectIncPaths:
     MSVC = _MSBuildProjectIncPaths()
 
 
+class _MSBuildProjectLibraries(Feature):
+    def __init__(self):
+        super(_MSBuildProjectLibraries, self).__init__()
+
+    def transform(self, project, cxx_project, toolchain, **kwargs):
+        for lib in project.get_libraries(toolchain, inherited=True):
+            cxx_project.add_dependency(lib.name)
+
+
+class MSBuildProjectLibraries:
+    MSVC = _MSBuildProjectLibraries()
+
+
 class _MSBuildProjectLibPaths(Feature):
     def __init__(self):
         super(_MSBuildProjectLibPaths, self).__init__()

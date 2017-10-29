@@ -797,7 +797,7 @@ class CXXToolchain(Toolchain):
         toolchain = toolchain if toolchain else self
 
         cxx_project = CXXProject(project, toolchain)
-        toolchain.apply_features(project, cxx_project)
+        toolchain.apply_features(project, cxx_project, toolchain)
 
         filter_project = FilterProject()
 
@@ -936,7 +936,7 @@ class CSToolchain(Toolchain):
         config.outputpath = "{}/{}/bin".format(self.attributes.output, project.name)
         config.intermediateoutputpath = "{}/{}/obj".format(self.attributes.output, project.name)
 
-        self.apply_features(project, cs_project)
+        self.apply_features(project, cs_project, toolchain)
 
         groups = project.source_groups + [project]
         for group in groups:

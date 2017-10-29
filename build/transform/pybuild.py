@@ -213,7 +213,7 @@ class CXXToolchain(Toolchain):
     def generate(self, project, toolchain=None):
         toolchain = toolchain if toolchain else self
         cxx_project = CXXProject(toolchain, project.name)
-        cxx_project.toolchain.apply_features(project, cxx_project)            
+        cxx_project.toolchain.apply_features(project, cxx_project, toolchain)
 
         groups = project.source_groups + [project]
         for group in groups:

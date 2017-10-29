@@ -16,9 +16,9 @@ from os import path
 
 
 class PyBuildCXXCompiler(Tool):
-    def __init__(self, cxx=False):
-        self._executable = 'gcc' if not cxx else 'g++'
-        self._cxx = cxx
+    def __init__(self, filetype='c++'):
+        self._executable = 'gcc' if filetype != 'c++' else 'g++'
+        self._filetype = filetype
         self._output_ext = '.o'
 
     def _directory(self, cxx_project, dirname):
@@ -29,11 +29,11 @@ class PyBuildCXXCompiler(Tool):
 
     def _cmdline(self, cxx_project, source_file):
         incpaths = ['-I{}'.format(path) for path in cxx_project.incpaths]
-        flags = cxx_project.cflags if not self._cxx else cxx_project.cxxflags
+        flags = cxx_project.cflags if self._filetype != 'c++' else cxx_project.cxxflags
 
         return "{} -x {} {} -c {} -o {}".format(
             self._executable,
-            'c++' if self._cxx else 'c', 
+            self._filetype, 
             ' '.join(flags),
             source_file, 
             self._product(cxx_project, source_file))
@@ -88,9 +88,8 @@ class PyBuildCXXArchiver(Tool):
 
 
 class PyBuildCXXLinker(Tool):
-    def __init__(self, cxx=False, executable='g++'):
+    def __init__(self, executable='g++'):
         self._executable = executable
-        self._cxx = cxx
         self._output_ext = ''
 
     def _directory(self, cxx_project, dirname):

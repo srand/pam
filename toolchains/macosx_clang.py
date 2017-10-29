@@ -6,11 +6,12 @@ from build.requirement import HostRequirement
 
 
 macosx = CXXToolchain("macosx-pam-clang")
-macosx.add_tool('.S', clang.PyBuildCXXCompiler(cxx=False))
-macosx.add_tool('.c', clang.PyBuildCXXCompiler(cxx=False))
-macosx.add_tool('.cc', clang.PyBuildCXXCompiler(cxx=True))
-macosx.add_tool('.cpp', clang.PyBuildCXXCompiler(cxx=True))
-macosx.add_tool('.cxx', clang.PyBuildCXXCompiler(cxx=True))
+macosx.add_tool('.s', clang.PyBuildCXXCompiler('assembler'))
+macosx.add_tool('.S', clang.PyBuildCXXCompiler('assembler-with-cpp'))
+macosx.add_tool('.c', clang.PyBuildCXXCompiler('c'))
+macosx.add_tool('.cc', clang.PyBuildCXXCompiler('c++'))
+macosx.add_tool('.cpp', clang.PyBuildCXXCompiler('c++'))
+macosx.add_tool('.cxx', clang.PyBuildCXXCompiler('c++'))
 macosx.archiver = clang.PyBuildCXXArchiver()
 macosx.linker = clang.PyBuildCXXLinker()
 macosx.add_requirement(HostRequirement.DARWIN)

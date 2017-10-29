@@ -6,10 +6,10 @@ from build.requirement import HostRequirement
 
 
 xcbuild = xcbuild.CXXToolchain("xcbuild-clang")
-xcbuild.add_tool('.c', clang.XcBuildCXXCompiler(cxx=False))
-xcbuild.add_tool('.cc', clang.XcBuildCXXCompiler(cxx=True))
-xcbuild.add_tool('.cpp', clang.XcBuildCXXCompiler(cxx=True))
-xcbuild.add_tool('.cxx', clang.XcBuildCXXCompiler(cxx=True))
+xcbuild.add_tool('.c', clang.XcBuildCXXCompiler('c'))
+xcbuild.add_tool('.cc', clang.XcBuildCXXCompiler('c++'))
+xcbuild.add_tool('.cpp', clang.XcBuildCXXCompiler('c++'))
+xcbuild.add_tool('.cxx', clang.XcBuildCXXCompiler('c++'))
 xcbuild.add_requirement(HostRequirement.DARWIN)
 #xcbuild.add_feature(PyBuildCustomCFlag('-std=c89'), 'language-c89')
 #cbuild.add_feature(PyBuildCustomCFlag('-std=c99'), 'language-c99')

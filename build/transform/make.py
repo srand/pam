@@ -54,4 +54,3 @@ class CXXToolchain(pybuild.CXXToolchain):
         
     def transform(self, project):
         self.generate(project, self).transform()
-        

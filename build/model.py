@@ -10,6 +10,7 @@
 
 
 from build.utils import Loader
+from build.transform import utils
 import os
 import re
 import uuid
@@ -67,7 +68,7 @@ class SourceGroup(object):
 
     def __init__(self, name=None):
         super(SourceGroup, self).__init__()
-        self.sources = []
+        self._sources = []
         self.name = name
 
     def add_sources(self, path, regex=r'.*', recurse=False, filter=None, tool=None, **kwargs):
@@ -86,16 +87,35 @@ class SourceGroup(object):
         Additional keyword arguments can be provided and will be forwarded directly to 
         the tool that becomes associated with the sources. Keys and values are tool specific. 
         """
-        all_files = [path]
-        if os.path.isdir(path):
-            if recurse:
-                all_files = [os.path.join(base, file) for base, dirs, files in os.walk(path) for file in files]
-            else:
-                all_files = os.listdir(path)
-                all_files = [os.path.join(path, file) for file in all_files]
-        matching_files = [file for file in all_files if re.match(regex, file)]
-        for source_file in matching_files:
-            self.sources.append(Source(source_file, filter, tool, kwargs))
+        class _LazySource(object):
+            def __init__(self, path, regex, recurse, filter, tool, **kwargs):
+                self.path = path
+                self.regex = regex
+                self.recurse = recurse
+                self.filter = filter
+                self.tool = tool
+                self.kwargs = kwargs
+                self._sources = None
+
+            @property
+            def sources(self):
+                if self._sources is not None:
+                    return self._sources
+                all_files = [path]
+                if os.path.isdir(path):
+                    if recurse:
+                        all_files = [os.path.join(base, file) for base, dirs, files in os.walk(path) for file in files]
+                    else:
+                        all_files = os.listdir(path)
+                        all_files = [os.path.join(path, file) for file in all_files]
+                matching_files = [file for file in all_files if re.match(regex, file)]
+                self._sources = [Source(source_file, filter, tool, kwargs) for source_file in matching_files]
+                return self._sources
+        self._sources.append(_LazySource(path, regex, recurse, filter, tool, **kwargs))
+
+    @property
+    def sources(self):
+        return [source for lazy_source in self._sources for source in lazy_source.sources]
 
 
 class _Macro(_FilteredAndPublished):
@@ -144,10 +164,6 @@ class IncludePathGroup(object):
         self.incpaths.append(_IncludePath(path, filter, publish)) 
 
 
-def has_incpaths(project):
-    return isinstance(project, IncludePathGroup)
-
-
 class _LibraryPath(_FilteredAndPublished):
     def __init__(self, path, filter=None, publish=None):
         super(_LibraryPath, self).__init__(filter, publish)
@@ -161,10 +177,21 @@ class LibraryPathGroup(object):
 
     def add_libpath(self, path, filter=None, publish=None):
         self.libpaths.append(_LibraryPath(path, filter, publish))
-    
 
-def has_libpaths(project):
-    return isinstance(project, LibraryPathGroup)
+
+class _Library(_FilteredAndPublished):
+    def __init__(self, name, filter=None, publish=None):
+        super(_Library, self).__init__(filter, publish)
+        self.name = name
+
+
+class LibraryGroup(object):
+    def __init__(self):
+        super(LibraryGroup, self).__init__()
+        self.libraries = []
+
+    def add_library(self, name, filter=None, publish=None):
+        self.libraries.append(_Library(name, filter, publish))
 
 
 class _Dependency(_FilteredAndPublished):
@@ -291,7 +318,7 @@ class CSExecutable(CSProject):
         super(CSExecutable, self).__init__(name)
 
 
-class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryPathGroup, DependencyGroup):
+class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryGroup, LibraryPathGroup, DependencyGroup):
     def __init__(self, name):
         super(CXXProject, self).__init__(name)
 
@@ -311,6 +338,10 @@ class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryPathGroup, Depend
         for library_path in library_path_group.libpaths:
             self.libpaths.append(library_path)
 
+    def add_library_group(self, library_group):
+        for library in library_group.libraries:
+            self.libraries.append(library)
+
     def get_macros(self, toolchain=None, inherited=False):
         macros = [] + self.macros
         if inherited:
@@ -329,6 +360,15 @@ class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryPathGroup, Depend
         return incpaths if toolchain is None else \
             [incpath for incpath in incpaths if incpath.matches(toolchain.name)]
 
+    def get_libraries(self, toolchain=None, inherited=False):
+        libraries = [] + self.libraries
+        if inherited:
+            for dep in self.dependencies:
+                if hasattr(dep.project, "libpaths"):
+                    libraries += [lib for lib in dep.project.libraries if lib.publish]
+        return libraries if toolchain is None else \
+            [lib for lib in libraries if lib.matches(toolchain.name)]
+    
     def get_libpaths(self, toolchain=None, inherited=False):
         libpaths = [] + self.libpaths
         if inherited:
@@ -346,17 +386,11 @@ class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryPathGroup, Depend
             
 
 class CXXLibrary(CXXProject):
-    def __init__(self, name, shared=False):
+    def __init__(self, name, shared=False, external=False):
         """ Initialized a new C++ native library project called **name** """
         super(CXXLibrary, self).__init__(name)
         self.shared = shared
-
-
-class CXXExternal(CXXProject):
-    def __init__(self, name, shared=False):
-        """ External dependency """
-        super(CXXExternal, self).__init__(name)
-        self.shared = shared
+        self.external = external
 
 
 class CXXExecutable(CXXProject):
@@ -386,7 +420,6 @@ class URLPackage(PythonProject, DependencyGroup):
     def __init__(self, name, url):
         super(URLPackage, self).__init__(name)
         self.url = url
-        self.add_toolchain
 
     def _report(self, *args, **kwargs):
         sys.stdout.write(".")
@@ -407,8 +440,10 @@ class URLPackage(PythonProject, DependencyGroup):
         if os.path.exists(self._location()):
             return
         
-        print "Downloading...",
-        filename, headers = urllib.urlretrieve(self.url, reporthook=self._report)
+        sys.stdout.write("Downloading...")
+        sys.stdout.flush()
+        urlopener = urllib.FancyURLopener()
+        filename, headers = urlopener.retrieve(self.url, reporthook=self._report)
         print(filename)
 
         extractors = {
@@ -422,4 +457,28 @@ class URLPackage(PythonProject, DependencyGroup):
         if ext not in extractors:
             raise RuntimeError("unrecognized file format: {}".format(ext))
 
+        sys.stdout.write("Extracting...")
+        sys.stdout.flush()
         extractors[ext](filename)
+
+
+class GitClone(PythonProject, DependencyGroup):
+    def __init__(self, name, url, path=None):
+        super(GitClone, self).__init__(name)
+        self.url = url
+        self.path = "{}/{}".format(name, path) if path else name
+
+    def _location(self):
+        return "output/{}".format(self.path)
+            
+    def transform(self, toolchain):
+        if os.path.exists(self._location()):
+            return
+
+        sys.stdout.write("Cloning...")
+        sys.stdout.flush()
+        rc, stdout, stderr = utils.execute("git clone {} {}".format(self.url, self._location()))
+        if rc != 0:
+            print(stdout)
+            print(stderr)
+            raise RuntimeError("git clone failed")

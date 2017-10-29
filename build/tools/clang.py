@@ -20,9 +20,9 @@ def _windows():
 
 
 class PyBuildCXXCompiler(gnu.PyBuildCXXCompiler):
-    def __init__(self, cxx=False):
-        super(PyBuildCXXCompiler, self).__init__(cxx=cxx)
-        self._executable = 'clang' if not cxx else 'clang++'
+    def __init__(self, filetype='c++'):
+        super(PyBuildCXXCompiler, self).__init__(filetype)
+        self._executable = 'clang' if filetype != 'c++' else 'clang++'
 
 
 class PyBuildCXXArchiver(gnu.PyBuildCXXArchiver):
@@ -37,16 +37,16 @@ class PyBuildCXXLinker(gnu.PyBuildCXXLinker):
 
 
 class XcBuildCXXCompiler(Tool):
-    def __init__(self, cxx=False):
+    def __init__(self, filetype='c++'):
         super(XcBuildCXXCompiler, self).__init__()
-        self.cxx = cxx
+        self.filetype = filetype
         
     def transform(self, cxx_project, sources):
         bp = cxx_project.create_source_buildphase()
         fr_list = []
         for source in sources:
             sr = cxx_project.create_file_reference(
-                cxx_project.FILE_TYPE_CPP if self.cxx else cxx_project.FILE_TYPE_C,
+                cxx_project.FILE_TYPE_CPP if self.filetype == 'c++' else cxx_project.FILE_TYPE_C,
                 source.path)
             fr_list.append(sr)
             bf = cxx_project.create_build_file(sr.reference)

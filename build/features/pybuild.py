@@ -38,9 +38,9 @@ class _PyBuildCustomCXXFlag(Feature):
 
 
 class PyBuildCustomCXXFlag(_PyBuildCustomCXXFlag):
-    CXX11 = _PyBuildCustomCFlag("-std=c++11")
-    CXX14 = _PyBuildCustomCFlag("-std=c++14")
-    CXX17 = _PyBuildCustomCFlag("-std=c++17")
+    CXX11 = _PyBuildCustomCXXFlag("-std=c++11")
+    CXX14 = _PyBuildCustomCXXFlag("-std=c++14")
+    CXX17 = _PyBuildCustomCXXFlag("-std=c++17")
         
 
 class PyBuildCustomLinkerFlag(Feature):
@@ -105,6 +105,21 @@ class _PyBuildProjectIncPaths(Feature):
 class PyBuildProjectIncPaths:
     MSVC = _PyBuildProjectIncPaths('/I')
     GNU = _PyBuildProjectIncPaths('-I')
+
+
+class _PyBuildProjectLibraries(Feature):
+    def __init__(self, prefix):
+        super(_PyBuildProjectLibraries, self).__init__()
+        self.prefix = prefix
+
+    def transform(self, project, cxx_project, toolchain, **kwargs):
+        for lib in project.get_libraries(toolchain, inherited=True):
+            cxx_project.add_library(self.prefix.format(name=lib.name))
+
+
+class PyBuildProjectLibraries:
+    MSVC = _PyBuildProjectLibraries('{name}.lib')
+    GNU = _PyBuildProjectLibraries('{name}')
 
 
 class _PyBuildProjectLibPaths(Feature):
