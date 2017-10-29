@@ -45,6 +45,7 @@ available toolchains:
     parser.add_argument('project', nargs='+', help='name of project to build')
     parser.add_argument('-f', '--file', default='pam.py', help='project file to load (default: pam.py)')
     parser.add_argument('-t', '--toolchain', help='toolchain to use (default: all supported)')
+    parser.add_argument('-i', '--inject-toolchain', help='forcibly add a toolchain to all projects')
     args = parser.parse_args()
 
     if not os.path.exists(args.file):
@@ -57,6 +58,14 @@ available toolchains:
         args.toolchain = r'.*'
 
     ProjectLoader(args.file).load()
+
+    if args.inject_toolchain:
+        tc = ToolchainRegistry.find(args.inject_toolchain)
+        if not tc:
+            exit("unrecognized toolchain '{}'".format(args.inject_toolchain))
+        for project in ProjectRegistry.all():
+            if hasattr(project, "add_toolchain"):
+                project.add_toolchain(args.inject_toolchain)
 
     projects = []
     if args.project[0] == "all":
