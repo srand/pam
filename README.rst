@@ -4,6 +4,13 @@ PAM - Pun At Make
 
 PAM is a portable build tool capable of building C/C++ and C# projects, either through its own build engine or by utilizing third party tools such as MSBuild, Xcode and Make. Projects are defined in Python scripts.
 
+Installing
+----------
+Make sure you have Python 2.7 and pip installed. Then:
+::
+  $ pip install -e git+https://bitbucket.org/rand_r/build.git#egg=Package
+
+
 First Project
 ---------------
 
@@ -133,13 +140,6 @@ The following builtin toolchains are available:
 
 Frequently Asked Questions
 --------------------------
-
-Q: How do I install it?
-````````````````````````
-Use pip:
-::
-  $ pip install -e git+https://rand_r@bitbucket.org/rand_r/build.git#egg=Package
-
 
 Q: How do I add a custom compiler flag to a project?
 ````````````````````````````````````````````````````
