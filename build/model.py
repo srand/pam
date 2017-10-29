@@ -365,7 +365,7 @@ class CXXExecutable(CXXProject):
         super(CXXExecutable, self).__init__(name)
 
 
-"""
+
 import urllib
 import sys
 import shutil
@@ -423,4 +423,3 @@ class URLPackage(PythonProject, DependencyGroup):
             raise RuntimeError("unrecognized file format: {}".format(ext))
 
         extractors[ext](filename)
-"""
