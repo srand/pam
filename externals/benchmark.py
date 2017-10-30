@@ -14,4 +14,5 @@ benchmark.use_feature("optimize", level="full")
 benchmark.add_macro("NDEBUG")
 benchmark.add_macro("HAVE_STD_REGEX")
 benchmark.add_library("pthread", filter="linux", publish=True)
+benchmark.add_library("shlwapi", filter="windows", publish=True)
 

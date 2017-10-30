@@ -773,7 +773,7 @@ class CXXProject(Project):
         self.link.additionallibrarydirectories = ";".join(self._libdir)
 
     def add_dependency(self, dep):
-        self._deps.append(dep)
+        self._deps.append(dep + ".lib")
         self.link.additionaldependencies = ";".join(self._deps + ["%(AdditionalDependencies)"])
 
     def transform(self):

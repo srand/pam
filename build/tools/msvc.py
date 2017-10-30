@@ -189,7 +189,7 @@ class PyBuildCXXLinker(Tool):
 
     def _cmdline(self, project, cxx_project, object_files):
         libpaths = ['/libpath:{}'.format(path) for path in cxx_project.libpaths]
-        libraries = ['{output}/{lib}/{lib}.lib'.format(output=cxx_project.toolchain.attributes.output, lib=lib) for lib in cxx_project.libraries]
+        libraries = ['{lib}.lib'.format(output=cxx_project.toolchain.attributes.output, lib=lib) for lib in cxx_project.libraries]
         flags = cxx_project.linkflags
 
         return "{} /nologo {} {} {} {} {} /out:{}".format(

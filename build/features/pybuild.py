@@ -11,6 +11,7 @@
 
 from build.feature import Feature
 from build.model import CXXLibrary
+import os
 
 
 class _PyBuildCustomCFlag(Feature):
@@ -118,7 +119,7 @@ class _PyBuildProjectLibraries(Feature):
 
 
 class PyBuildProjectLibraries:
-    MSVC = _PyBuildProjectLibraries('{name}.lib')
+    MSVC = _PyBuildProjectLibraries('{name}')
     GNU = _PyBuildProjectLibraries('{name}')
 
 
@@ -133,19 +134,26 @@ class _PyBuildProjectLibPaths(Feature):
 
 
 class PyBuildProjectLibPaths:
-    MSVC = _PyBuildProjectLibPaths('/L')
+    MSVC = _PyBuildProjectLibPaths('/LIBPATH:')
     GNU = _PyBuildProjectLibPaths('-L')
 
 
 class _PyBuildProjectDeps(Feature):
+    def __init__(self, prefix):
+        super(_PyBuildProjectDeps, self).__init__()
+        self.prefix = prefix
+
     def transform(self, project, cxx_project, toolchain, **kwargs):
         for dep in project.get_dependencies(toolchain):
-            if isinstance(dep.project, CXXLibrary):
+            if isinstance(dep.project, CXXLibrary):            
+                libpath = os.path.join(toolchain.attributes.output, dep.project.name)
+                cxx_project.add_linkflag('{}{}'.format(self.prefix, libpath))
                 cxx_project.add_library(dep.project.name)            
 
 
 class PyBuildProjectDeps:
-    ALL = _PyBuildProjectDeps()
+    MSVC = _PyBuildProjectDeps("/LIBPATH:")
+    GNU = _PyBuildProjectDeps("-L")
 
 
 class PyBuildLinkLibrary(Feature):

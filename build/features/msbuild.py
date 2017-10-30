@@ -10,6 +10,7 @@
 
 from build.feature import Feature
 from build.model import CXXLibrary
+import os
 
 
 class _MSBuildOptimize:
@@ -95,14 +96,14 @@ class _MSBuildProjectDeps(Feature):
     def transform(self, project, cxx_project, toolchain, **kwargs):
         for dep in project.get_dependencies(toolchain):
             if isinstance(dep.project, CXXLibrary):
-                cxx_project.add_libdir('{output}/{lib}'.format(
-                    output=toolchain.attributes.output, lib=dep.project.name))
-                cxx_project.add_dependency('{lib}.lib'.format(
+                cxx_project.add_libdir(
+                    os.path.join(toolchain.attributes.output, dep.project.name))
+                cxx_project.add_dependency('{lib}'.format(
                     output=toolchain.attributes.output, lib=dep.project.name))
 
 
 class MSBuildProjectDeps:
-    ALL = _MSBuildProjectDeps()
+    MSVC = _MSBuildProjectDeps()
 
 
 class _MSBuildLinkLibrary(Feature):
@@ -117,15 +118,15 @@ class _MSBuildLinkLibrary(Feature):
 
 class MSBuildLinkLibrary(_MSBuildLinkLibrary):
     COMMON = _MSBuildLinkLibrary([
-        'd2d1.lib',
-        'd3d11.lib',
-        'dxgi.lib',
-        'windowscodecs.lib',
-        'dwrite.lib',
-        'dxguid.lib',
-        'xaudio2.lib',
-        'xinput.lib',
-        'mfcore.lib',
-        'mfplat.lib',
-        'mfreadwrite.lib',
-        'mfuuid.lib'])
+        'd2d1',
+        'd3d11',
+        'dxgi',
+        'windowscodecs',
+        'dwrite',
+        'dxguid',
+        'xaudio2',
+        'xinput',
+        'mfcore',
+        'mfplat',
+        'mfreadwrite',
+        'mfuuid'])

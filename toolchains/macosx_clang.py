@@ -25,7 +25,7 @@ macosx.add_feature(PyBuildOptimize.GNU, 'optimize')
 macosx.add_feature(PyBuildProjectMacros.GNU)
 macosx.add_feature(PyBuildProjectIncPaths.GNU)
 macosx.add_feature(PyBuildProjectLibPaths.GNU)
-macosx.add_feature(PyBuildProjectDeps.ALL)
+macosx.add_feature(PyBuildProjectDeps.GNU)
 
 macosx_x86 = ToolchainExtender("macosx-x86-pam-clang", macosx)
 macosx_x86.add_feature(PyBuildCustomCFlag('-m32'))
