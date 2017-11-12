@@ -339,12 +339,7 @@ win_x64_vs14_nmake.add_feature(PyBuildProjectLibraries.MSVC)
 
 
 vs14_clang = pybuild.CXXToolchain("pam-clang-vs14")
-vs14_clang.add_tool('.s', clang.PyBuildCXXCompiler('assembler'))
-vs14_clang.add_tool('.S', clang.PyBuildCXXCompiler('assembler-with-cpp'))
-vs14_clang.add_tool('.c', clang.PyBuildCXXCompiler('c'))
-vs14_clang.add_tool('.cc', clang.PyBuildCXXCompiler('c++'))
-vs14_clang.add_tool('.cpp', clang.PyBuildCXXCompiler('c++'))
-vs14_clang.add_tool('.cxx', clang.PyBuildCXXCompiler('c++'))
+clang.ClangToolFactory().configure(vs14_clang)
 vs14_clang.add_requirement(HostRequirement.WINDOWS)
 vs14_clang.add_requirement(_vs14_env_req)
 vs14_clang.add_requirement(_vs14_path_req)

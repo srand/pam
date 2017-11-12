@@ -22,6 +22,7 @@ class CXXProject(pybuild.CXXProject):
         rc, _ = utils.execute('nmake.exe /nologo {}.nmake '.format(self.name), self.vcvars)
         if rc != 0:
             raise RuntimeError()
+        return True
 
 
 class CXXToolchain(pybuild.CXXToolchain):
@@ -42,5 +43,5 @@ class CXXToolchain(pybuild.CXXToolchain):
         
         
     def transform(self, project, toolchain):
-        self.generate(project, toolchain).transform()
+        return self.generate(project, toolchain).transform()
         

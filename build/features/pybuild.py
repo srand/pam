@@ -165,4 +165,19 @@ class PyBuildLinkLibrary(Feature):
         for lib in self.libraries:
             cxx_project.add_dependency(lib)
 
-    
+
+class GNUFeatureFactory:
+    def configure(self, toolchain):
+        toolchain.add_feature(PyBuildCustomCFlag.C89, 'language-c89')
+        toolchain.add_feature(PyBuildCustomCFlag.C99, 'language-c99')
+        toolchain.add_feature(PyBuildCustomCFlag.C11, 'language-c11')
+        toolchain.add_feature(PyBuildCustomCXXFlag.CXX11, 'language-c++11')
+        toolchain.add_feature(PyBuildCustomCXXFlag.CXX14, 'language-c++14')
+        toolchain.add_feature(PyBuildCustomCXXFlag.CXX17, 'language-c++17')
+        toolchain.add_feature(PyBuildCustomCXXFlag('-g'), 'debug')
+        toolchain.add_feature(PyBuildOptimize.GNU, 'optimize')
+        toolchain.add_feature(PyBuildProjectMacros.GNU)
+        toolchain.add_feature(PyBuildProjectIncPaths.GNU)
+        toolchain.add_feature(PyBuildProjectLibPaths.GNU)
+        toolchain.add_feature(PyBuildProjectDeps.GNU)
+        toolchain.add_feature(PyBuildProjectLibraries.GNU)

@@ -526,6 +526,7 @@ class CXXProject(RootElement):
         rc, _ = utils.execute('xcodebuild -project {}.xcodeproj'.format(self.name))
         if rc != 0:
             raise RuntimeError()
+        return True
 
 
 class CXXToolchain(Toolchain):
@@ -604,4 +605,4 @@ class CXXToolchain(Toolchain):
 
     def transform(self, project):
         cxx_project = self.generate(project)
-        cxx_project.transform()
+        return cxx_project.transform()

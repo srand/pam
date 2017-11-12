@@ -100,16 +100,14 @@ available toolchains:
 
         def transform(project, toolchain=None):
             start_time = time.time()
-            print('===== Building: %s' % (project.name))
-            project.transform(toolchain)
-            elapsed = time.time() - start_time
-            print('===== Done: %dm %ds' % (elapsed / 60, elapsed % 60))
-            print('\n')
-            
+            print('===== Checking: %s' % (project.name))
+            if project.transform(toolchain):
+                elapsed = time.time() - start_time
+                print('===== Done: %dm %ds' % (elapsed / 60, elapsed % 60))
+
         if project not in completed:
             build(project)
-                
-            
+    print("===== Done")
 
 if __name__ == "__main__":
     main()

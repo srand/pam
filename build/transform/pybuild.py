@@ -243,7 +243,7 @@ class CXXToolchain(Toolchain):
         return cxx_project
             
     def transform(self, project):
-        self.generate(project).transform()
+        return self.generate(project).transform()
 
 
 class CXXProject(Settings):
@@ -286,6 +286,8 @@ class CXXProject(Settings):
         job1.add_dependency(job2)
 
     def transform(self):
+        if not self.job.required: 
+            return False
         jobs = {}
         consumes = {}
         for product, job in self._jobs.iteritems():
@@ -324,3 +326,4 @@ class CXXProject(Settings):
                     jobs[consumer.product].remove(job)
 
         pool.stop()
+        return True

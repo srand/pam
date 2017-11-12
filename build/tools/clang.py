@@ -15,27 +15,6 @@ from build.tools import msvc
 import platform
 
 
-def _windows():
-    return platform.system() == 'Windows'
-
-
-class PyBuildCXXCompiler(gnu.PyBuildCXXCompiler):
-    def __init__(self, filetype='c++'):
-        super(PyBuildCXXCompiler, self).__init__(filetype)
-        self._executable = 'clang' if filetype != 'c++' else 'clang++'
-
-
-class PyBuildCXXArchiver(gnu.PyBuildCXXArchiver):
-    def __init__(self):
-        super(PyBuildCXXArchiver, self).__init__()
-
-
-class PyBuildCXXLinker(gnu.PyBuildCXXLinker):
-    def __init__(self):
-        super(PyBuildCXXLinker, self).__init__()
-        self._executable = 'clang++'
-
-
 class XcBuildCXXCompiler(Tool):
     def __init__(self, filetype='c++'):
         super(XcBuildCXXCompiler, self).__init__()
@@ -52,3 +31,19 @@ class XcBuildCXXCompiler(Tool):
             bf = cxx_project.create_build_file(sr.reference)
             bp.files.append(bf.reference)
         return fr_list
+
+
+class ClangToolFactory:
+    def __init__(self, prefix=None, path=None):
+        self.prefix = prefix
+        self.path = path
+
+    def configure(self, toolchain):
+        toolchain.add_tool('.s', gnu.PyBuildCXXCompiler('clang', 'assembler', prefix=self.prefix, path=self.path))
+        toolchain.add_tool('.S', gnu.PyBuildCXXCompiler('clang', 'assembler-with-cpp', prefix=self.prefix, path=self.path))
+        toolchain.add_tool('.c', gnu.PyBuildCXXCompiler('clang', 'c', prefix=self.prefix, path=self.path))
+        toolchain.add_tool('.cc', gnu.PyBuildCXXCompiler('clang++', 'c++', prefix=self.prefix, path=self.path))
+        toolchain.add_tool('.cpp', gnu.PyBuildCXXCompiler('clang++', 'c++', prefix=self.prefix, path=self.path))
+        toolchain.add_tool('.cxx', gnu.PyBuildCXXCompiler('clang++', 'c++', prefix=self.prefix, path=self.path))
+        toolchain.archiver = gnu.PyBuildCXXArchiver(prefix=self.prefix, path=self.path)
+        toolchain.linker = gnu.PyBuildCXXLinker(executable='clang++', prefix=self.prefix, path=self.path)

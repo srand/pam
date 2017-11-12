@@ -781,6 +781,7 @@ class CXXProject(Project):
             self.project.name, self.toolchain.config, platform=self.toolchain.platform), self.toolchain.vcvars)
         if rc != 0:
             raise RuntimeError()
+        return True
 
 
 class CXXToolchain(Toolchain):
@@ -825,7 +826,7 @@ class CXXToolchain(Toolchain):
 
     def transform(self, project):
         cxx_project = self.generate(project)
-        cxx_project.transform()
+        return cxx_project.transform()
 
 
 #########################################################################################

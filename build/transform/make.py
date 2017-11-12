@@ -25,6 +25,7 @@ class CXXProject(pybuild.CXXProject):
             self.name, multiprocessing.cpu_count()))
         if rc != 0:
             raise RuntimeError(rc)
+        return True
 
 
 class CXXToolchain(pybuild.CXXToolchain):
@@ -53,4 +54,4 @@ class CXXToolchain(pybuild.CXXToolchain):
         
         
     def transform(self, project):
-        self.generate(project, self).transform()
+        return self.generate(project, self).transform()
