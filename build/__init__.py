@@ -7,3 +7,5 @@
 # for any reason without written consent of the copyright holder.
 #
 ##############################################################################
+
+verbose = False

@@ -9,6 +9,7 @@
 ##############################################################################
 
 
+import build
 from build import model
 from build.transform import utils
 from build.transform.toolchain import Toolchain
@@ -165,7 +166,8 @@ class Command(Job):
 
     def execute(self):
         if self.completed: return
-        # utils.print_locked(self._cmdline)
+        if build.verbose:
+            utils.print_locked(self._cmdline)
         rc, stdout, stderr = utils.execute(self._cmdline, self._env, output=False)
         if rc != 0: 
             utils.print_locked("{}", "\n".join(stdout))

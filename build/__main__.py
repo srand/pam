@@ -17,6 +17,8 @@ import time
 from build.transform.toolchain import ToolchainRegistry, ToolchainLoader
 from build.feature import FeatureLoader
 from build.model import ProjectRegistry, ProjectLoader
+import build
+
 
 toolchains_path = os.path.join(os.path.dirname(__file__), os.pardir, "toolchains")
 features_path = os.path.join(os.path.dirname(__file__), os.pardir, "features")
@@ -43,10 +45,14 @@ available toolchains:
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=help)
     parser.add_argument('project', nargs='+', help='name of project to build')
+    parser.add_argument('-v', '--verbose', action="store_true", help='verbose output')
     parser.add_argument('-f', '--file', default='pam.py', help='project file to load (default: pam.py)')
     parser.add_argument('-t', '--toolchain', help='toolchain to use (default: all supported)')
     parser.add_argument('-i', '--inject-toolchain', help='forcibly add a toolchain to all projects')
     args = parser.parse_args()
+
+    if args.verbose:
+        build.verbose = True
 
     if not os.path.exists(args.file):
         exit('file not found: {}'.format(args.file))
@@ -79,9 +85,9 @@ available toolchains:
 
     completed = set()
     for project in projects:
-        def build(project):
+        def _build(project):
             for dependency in project.dependencies:
-                build(dependency.project)
+                _build(dependency.project)
             if project.is_toolchain_agnostic:
                 transform(project)
             for toolchain_name in project.toolchains:
@@ -107,7 +113,7 @@ available toolchains:
                 print('===== Done: %dm %ds' % (elapsed / 60, elapsed % 60))
 
         if project not in completed:
-            build(project)
+            _build(project)
     print("===== Done")
 
 if __name__ == "__main__":
