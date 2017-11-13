@@ -80,10 +80,8 @@ available toolchains:
     completed = set()
     for project in projects:
         def build(project):
-            completed.add(project)
             for dependency in project.dependencies:
-                if dependency.project not in completed:
-                    build(dependency.project)
+                build(dependency.project)
             if project.is_toolchain_agnostic:
                 transform(project)
             for toolchain_name in project.toolchains:
@@ -99,6 +97,9 @@ available toolchains:
                 transform(project, toolchain)
 
         def transform(project, toolchain=None):
+            if project in completed:
+                return
+            completed.add(project)
             start_time = time.time()
             print('===== Checking: %s' % (project.name))
             if project.transform(toolchain):

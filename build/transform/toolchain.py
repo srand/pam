@@ -14,6 +14,7 @@ import os
 import re
 import platform
 from build.utils import Loader
+from build.model import _Feature
 
 
 class ToolchainRegistry(object):
@@ -121,8 +122,8 @@ class ToolchainExtender(Toolchain):
         self.toolchain.apply_features(project, transformed_project, toolchain)
         super(ToolchainExtender, self).apply_features(project, transformed_project, toolchain)
         
-    def use_feature(self, name):
-        feature = Feature(name)
+    def use_feature(self, name, **kwargs):
+        feature = _Feature(name, **kwargs)
         self._used_features.append(feature)
         return feature    
 
