@@ -78,6 +78,9 @@ class DepfileParser:
         self.product = ""
         self.dependencies = []
 
+        if not os.path.exists(filename):
+            return
+
         with open(filename) as f:
             self.data = f.read()
 

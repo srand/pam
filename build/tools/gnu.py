@@ -45,7 +45,7 @@ class PyBuildCXXCompiler(_ExecutableMixin, Tool):
         incpaths = ['-I{}'.format(path) for path in cxx_project.incpaths]
         flags = cxx_project.cflags if self.filetype != 'c++' else cxx_project.cxxflags
 
-        return "{} -x {} {} -MM -MD -c {} -o {}".format(
+        return "{} -x {} {} -MMD -c {} -o {}".format(
             self.executable,
             self.filetype, 
             ' '.join(flags),

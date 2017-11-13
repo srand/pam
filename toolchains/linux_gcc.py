@@ -26,8 +26,6 @@ linux_x86.add_feature(PyBuildCustomCFlag('-m64'))
 linux_x86.add_feature(PyBuildCustomCXXFlag('-m64'))
 linux_x86.add_feature(PyBuildCustomLinkerFlag('-m64'))
 
-linux_arm = ToolchainExtender("linux-arm-pam-gcc", linux)
-
 
 gcc_mk = MakeCXXToolchain("make-gcc")
 tools.configure(gcc_mk)
