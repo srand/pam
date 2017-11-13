@@ -70,3 +70,25 @@ def multidispatch(dispatch, *types):
             dispatch.add_default_method(function)
         return dispatch
     return register
+
+
+class DepfileParser:
+    def __init__(self, filename):
+        self.data = ""
+        self.product = ""
+        self.dependencies = []
+
+        with open(filename) as f:
+            self.data = f.read()
+
+        self.data = self.data.replace("\n", "")
+        self.data = self.data.replace("\r", "")
+        self.data = self.data.replace("\\", "")
+
+        index = self.data.find(":")
+        if index < 0:
+            return
+
+        self.data = self.data[index+1:]
+        self.product = self.data[0:index]
+        self.dependencies = [dep for dep in self.data.split(" ") if dep]

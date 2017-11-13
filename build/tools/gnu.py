@@ -12,6 +12,7 @@
 from build.tools import Tool
 from build.tools.directory import PyBuildDirectoryCreator
 from build.transform import pybuild
+from build.utils import DepfileParser
 from os import path, pathsep, environ
 from copy import copy
 
@@ -44,7 +45,7 @@ class PyBuildCXXCompiler(_ExecutableMixin, Tool):
         incpaths = ['-I{}'.format(path) for path in cxx_project.incpaths]
         flags = cxx_project.cflags if self.filetype != 'c++' else cxx_project.cxxflags
 
-        return "{} -x {} {} -c {} -o {}".format(
+        return "{} -x {} {} -MM -MD -c {} -o {}".format(
             self.executable,
             self.filetype, 
             ' '.join(flags),
@@ -66,6 +67,13 @@ class PyBuildCXXCompiler(_ExecutableMixin, Tool):
         cxx_project.add_job(obj)
         cxx_project.add_dependency(obj.product, source_file.path)
         cxx_project.add_dependency(obj.product, dir.product)
+
+        depfile, _ = path.splitext(obj.product)
+        for dep in DepfileParser(depfile + ".d").dependencies:
+            if not cxx_project.get_job(dep):
+                cxx_project.add_job(pybuild.Source(dep))
+                cxx_project.add_dependency(obj.product, dep)
+
         return obj
 
 
