@@ -42,7 +42,6 @@ class PyBuildCXXCompiler(_ExecutableMixin, Tool):
         return '{output}/{}{}'.format(source_file, self._output_ext, output=cxx_project.output)
 
     def _cmdline(self, cxx_project, source_file):
-        incpaths = ['-I{}'.format(path) for path in cxx_project.incpaths]
         flags = cxx_project.cflags if self.filetype != 'c++' else cxx_project.cxxflags
 
         return "{} -x {} {} -MMD -c {} -o {}".format(
@@ -122,8 +121,7 @@ class PyBuildCXXLinker(_ExecutableMixin, Tool):
         return '{output}/{}{}'.format(cxx_project.name, self._output_ext, output=cxx_project.output)
 
     def _cmdline(self, project, cxx_project, object_files):
-        libpaths = ['-L{}'.format(path) for path in cxx_project.libpaths]
-        libpaths += ['-L{output}/{lib}'.format(output=cxx_project.toolchain.attributes.output, lib=lib) for lib in cxx_project.libraries]
+        libpaths = ['-L{output}/{lib}'.format(output=cxx_project.toolchain.attributes.output, lib=lib) for lib in cxx_project.libraries]
         libraries = ['-l{}'.format(path) for path in cxx_project.libraries]
         flags = cxx_project.linkflags
 

@@ -20,49 +20,20 @@ from os import path, stat
 class Settings(object):
     def __init__(self, template_settings=None):
         if template_settings:
-            self._macros = copy(template_settings._macros)
-            self._incpaths = copy(template_settings._incpaths)
-            self._libpaths = copy(template_settings._libpaths)
             self._cflags = copy(template_settings._cflags)
             self._cxxflags = copy(template_settings._cxxflags)
             self._linkflags = copy(template_settings._linkflags)
             self._libraries = copy(template_settings._libraries)
         else:
-            self._macros = set()
-            self._incpaths = set()
-            self._libpaths = set()
             self._cflags = []
             self._cxxflags = []
             self._linkflags = []
             self._libraries = []
 
-    def add_macro(self, name, value=None):
-        self._macros.add((name, value))
-
-    @property
-    def macros(self):
-        return self._macros
-
-    def add_incpath(self, path):
-        self._incpaths.add(path)
-
-    @property
-    def incpaths(self):
-        return self._incpaths
-
-    def add_libpath(self, path):
-        if not path:
-            self._libpaths.add('.')
-        else:
-            self._libpaths.add(path)
-
-    @property
-    def libpaths(self):
-        return self._libpaths
-
     def add_cflag(self, *flags):
         for flag in flags:
-            self._cflags.append(flag)
+            if flag not in self._cflags:
+                self._cflags.append(flag)
 
     @property
     def cflags(self):
@@ -70,7 +41,8 @@ class Settings(object):
 
     def add_cxxflag(self, *flags):
         for flag in flags:
-            self._cxxflags.append(flag)
+            if flag not in self._cxxflags:
+                self._cxxflags.append(flag)
 
     @property
     def cxxflags(self):
@@ -78,14 +50,16 @@ class Settings(object):
 
     def add_linkflag(self, *flags):
         for flag in flags:
-            self._linkflags.append(flag)
+            if flag not in self._linkflags:
+                self._linkflags.append(flag)
 
     @property
     def linkflags(self):
         return self._linkflags
 
     def add_library(self, lib):
-        self._libraries.append(lib)
+        if lib not in self._libraries:
+            self._libraries.append(lib)
 
     @property
     def libraries(self):

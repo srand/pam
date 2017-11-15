@@ -95,3 +95,4 @@ class DepfileParser:
         self.data = self.data[index+1:]
         self.product = self.data[0:index]
         self.dependencies = [dep for dep in self.data.split(" ") if dep]
+        self.dependencies = [os.path.normpath(dep) for dep in self.dependencies]
