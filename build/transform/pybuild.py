@@ -294,6 +294,8 @@ class CXXProject(Settings):
         job1.add_dependency(job2)
 
     def transform(self):
+        if not hasattr(self, "job"):
+            return False
         if not self.job.required: 
             return False
         jobs = {}

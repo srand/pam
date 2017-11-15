@@ -1,10 +1,10 @@
-from build.model import CXXExecutable, CXXLibrary, GitClone
+from build.model import CXXExecutable, CXXProject, GitClone
 
 source = GitClone(
     "spdlog-source",
     "https://github.com/gabime/spdlog.git")
 
-spdlog = CXXLibrary("spdlog")
+spdlog = CXXProject("spdlog")
 spdlog.add_dependency(source)
 spdlog.add_incpath("output/spdlog-source/include", publish=True)
 spdlog.add_library("pthread", filter="linux", publish=True)
