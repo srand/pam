@@ -15,6 +15,7 @@ from build.transform import utils
 from build.transform.toolchain import Toolchain
 from copy import copy
 from os import path, stat
+import hashlib
 
 
 class Settings(object):
@@ -112,15 +113,20 @@ class Job(object):
         return self._deps.keys()
 
     def execute(self):
-        if self.completed: 
-            return
-        if self.driver:
-            driver.execute(product, self)
+        pass
 
 
 class Source(Job):
     def __init__(self, source):
         super(Source, self).__init__(source)
+
+    def _hash(self):
+        m = hashlib.sha256()
+        if path.exists(self.product):
+            m.update(str(stat(self.product)))
+            #with open(self.product) as f:
+                #m.update(f.read())
+        return m.hexdigest()
 
 
 class Command(Job):
@@ -138,6 +144,31 @@ class Command(Job):
     def info(self):
         return self._info
 
+    def _hash(self):
+        m = hashlib.sha256()
+        for dep in self.dependencies():
+            m.update(self.get_dependency(dep)._hash())
+        m.update(self._cmdline)
+        m.update(self._info)
+        return m.hexdigest()
+
+    def _hash_store(self):
+        product_hash = self.product + ".hash"
+        with open(product_hash, "w") as f:
+            f.write(self._hash())
+
+    def _hash_fetch(self):
+        product_hash = self.product + ".hash"
+        if path.exists(product_hash):
+            with open(product_hash) as f:
+                return f.read()
+        return None
+
+    @property
+    def required(self):
+        stored_hash = self._hash_fetch()
+        return stored_hash != self._hash()
+
     def execute(self):
         if self.completed: return
         if build.verbose:
@@ -147,6 +178,7 @@ class Command(Job):
             utils.print_locked("{}", "\n".join(stdout))
             utils.print_locked("{}", "\n".join(stderr))
             raise RuntimeError('job failed: ' + self._cmdline)
+        self._hash_store()
         self._completed = True
 
 
