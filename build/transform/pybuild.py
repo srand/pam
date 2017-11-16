@@ -292,7 +292,7 @@ class CXXProject(Settings):
 
     def add_job(self, job):
         if job.product in self._jobs:
-            raise RuntimeError('already know about {}'.format(product))
+            raise RuntimeError('already know about {}'.format(job.product))
         self._jobs[job.product] = job
         return job
 
