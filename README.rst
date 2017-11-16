@@ -11,7 +11,7 @@ Installing
 ----------
 Make sure you have Python 2.7 and pip installed. Then:
 ::
-  $ pip install -e git+https://bitbucket.org/rand_r/build.git#egg=Package
+  $ pip install -e git+https://bitbucket.org/rand_r/pam.git#egg=Package
 
 
 First Project
