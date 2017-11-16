@@ -16,6 +16,7 @@ from build.transform.toolchain import Toolchain
 from copy import copy
 from os import path, stat
 import hashlib
+from collections import OrderedDict
 
 
 class Settings(object):
@@ -72,7 +73,7 @@ class Job(object):
         self._product = path.normpath(product)
         self._driver = driver
         self._completed = False
-        self._deps = {}
+        self._deps = OrderedDict()
         self._timestamp = 0
         self._required = None
 
@@ -115,6 +116,10 @@ class Job(object):
     def execute(self):
         pass
 
+    @staticmethod
+    def on_completed(self):
+        pass
+
 
 class Source(Job):
     def __init__(self, source):
@@ -135,6 +140,7 @@ class Command(Job):
         self._cmdline = cmdline
         self._info = info
         self._env = env
+        self._hc = None
 
     @property
     def cmdline(self):
@@ -145,17 +151,24 @@ class Command(Job):
         return self._info
 
     def _hash(self):
+        if self._hc is not None:
+            return self._hc
         m = hashlib.sha256()
         for dep in self.dependencies():
             m.update(self.get_dependency(dep)._hash())
         m.update(self._cmdline)
         m.update(self._info)
-        return m.hexdigest()
+        self._hc = m.hexdigest()
+        return self._hc
+
+    def _hash_clear(self):
+        self._hc = None
 
     def _hash_store(self):
         product_hash = self.product + ".hash"
+        digest = self._hash()
         with open(product_hash, "w") as f:
-            f.write(self._hash())
+            f.write(digest)
 
     def _hash_fetch(self):
         product_hash = self.product + ".hash"
@@ -178,8 +191,9 @@ class Command(Job):
             utils.print_locked("{}", "\n".join(stdout))
             utils.print_locked("{}", "\n".join(stderr))
             raise RuntimeError('job failed: ' + self._cmdline)
-        self._hash_store()
         self._completed = True
+        self.on_completed(self)
+        self._hash_store()
 
 
 class Object(Command):
@@ -257,7 +271,7 @@ class CXXToolchain(Toolchain):
 class CXXProject(Settings):
     def __init__(self, toolchain, name):
         super(CXXProject, self).__init__()
-        self._jobs = {}
+        self._jobs = OrderedDict()
         self.name = name
         self.toolchain = toolchain
         self.output = path.join(toolchain.attributes.output, name)
@@ -298,8 +312,8 @@ class CXXProject(Settings):
             return False
         if not self.job.required: 
             return False
-        jobs = {}
-        consumes = {}
+        jobs = OrderedDict()
+        consumes = OrderedDict()
         for product, job in self._jobs.iteritems():
             jobs[product] = []
             consumes[product] = []

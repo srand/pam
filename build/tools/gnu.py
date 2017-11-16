@@ -15,6 +15,7 @@ from build.transform import pybuild
 from build.utils import DepfileParser
 from os import path, pathsep, environ
 from copy import copy
+from functools import partial
 
 
 class _ExecutableMixin(object):
@@ -28,6 +29,16 @@ class _ExecutableMixin(object):
         self.environ = copy(environ)
         if self.path and self.environ["PATH"]:
             self.environ["PATH"] += pathsep + path 
+
+
+def _scan_deps(cxx_project, obj):
+    depfile, _ = path.splitext(obj.product)
+    obj._hash_clear()
+    for dep in DepfileParser(depfile + ".d").dependencies:
+        if not cxx_project.get_job(dep):
+            job = pybuild.Source(dep)
+            cxx_project.add_job(job)
+        cxx_project.add_dependency(obj.product, dep)
 
 
 class PyBuildCXXCompiler(_ExecutableMixin, Tool):
@@ -67,11 +78,8 @@ class PyBuildCXXCompiler(_ExecutableMixin, Tool):
         cxx_project.add_dependency(obj.product, source_file.path)
         cxx_project.add_dependency(obj.product, dir.product)
 
-        depfile, _ = path.splitext(obj.product)
-        for dep in DepfileParser(depfile + ".d").dependencies:
-            if not cxx_project.get_job(dep):
-                cxx_project.add_job(pybuild.Source(dep))
-                cxx_project.add_dependency(obj.product, dep)
+        obj.on_completed = partial(_scan_deps, cxx_project)
+        obj.on_completed(obj)
 
         return obj
 
@@ -106,6 +114,10 @@ class PyBuildCXXArchiver(_ExecutableMixin, Tool):
         cxx_project.add_dependency(library.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(library.product, obj)
+
+        library.on_completed = partial(_scan_deps, cxx_project)
+        library.on_completed(library)
+
         return library
 
 
@@ -148,6 +160,10 @@ class PyBuildCXXLinker(_ExecutableMixin, Tool):
         cxx_project.add_dependency(executable.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(executable.product, obj)
+
+        executable.on_completed = partial(_scan_deps, cxx_project)
+        executable.on_completed(executable)
+
         return executable
 
 
