@@ -240,6 +240,32 @@ class FeatureGroup(object):
         return feature
 
 
+class _Command(_Filtered):
+    def __init__(self, output, inputs, command, filter=None, **kwargs):
+        super(_Command, self).__init__(filter)
+        self.output = output
+        self.inputs = inputs if type(inputs) == list else [inputs]
+        self.command = command
+        self.args = kwargs
+        
+    def add_argument(self, **kwargs):
+        self.args.update(kwargs)
+
+    @property
+    def cmdline(self):
+        return self.command.format(inputs=" ".join(self.inputs), output=self.output)
+
+
+class CommandGroup(object):
+    def __init__(self):
+        super(CommandGroup, self).__init__()
+        self.commands = []
+
+    def add_command(self, output, inputs, command, filter=None, **kwargs):
+        self.commands.append(
+            _Command(output, inputs, command, filter))
+
+
 class ProjectRegistry(object):
     _projects = {}
 
@@ -326,7 +352,7 @@ class CSExecutable(CSProject):
         super(CSExecutable, self).__init__(name)
 
 
-class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryGroup, LibraryPathGroup, DependencyGroup):
+class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryGroup, LibraryPathGroup, DependencyGroup, CommandGroup):
     def __init__(self, name):
         super(CXXProject, self).__init__(name)
 
@@ -390,6 +416,11 @@ class CXXProject(Project, MacroGroup, IncludePathGroup, LibraryGroup, LibraryPat
         deps = [] + self.dependencies
         return deps if toolchain is None else \
             [dep for dep in deps if dep.matches(toolchain.name)]
+
+    def get_commands(self, toolchain=None):
+        cmds = [] + self.commands
+        return cmds if toolchain is None else \
+            [cmd for cmd in cmds if cmd.matches(toolchain.name)]
 
             
 

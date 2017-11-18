@@ -14,7 +14,7 @@ from build import model
 from build.transform import utils
 from build.transform.toolchain import Toolchain
 from copy import copy
-from os import path, stat
+from os import path, stat, environ, pathsep
 import hashlib
 from collections import OrderedDict
 
@@ -237,6 +237,13 @@ class CXXToolchain(Toolchain):
         cxx_project = CXXProject(toolchain, project.name)
         cxx_project.toolchain.apply_features(project, cxx_project, toolchain)
 
+        path_env = self.get_extended_pathenv(toolchain, project.get_dependencies(toolchain))
+        for command in project.get_commands(toolchain):
+            job = cxx_project.add_command(command.output, command.cmdline, env=path_env)
+            for input in command.inputs:
+                cxx_project.add_source(input)
+                cxx_project.add_dependency(job.product, input)
+            
         groups = project.source_groups + [project]
         for group in groups:
             for source in group.sources:
@@ -259,7 +266,7 @@ class CXXToolchain(Toolchain):
             object_names = [obj.product for obj in objects]
             linker = toolchain.linker if hasattr(toolchain, 'linker') else self.linker
             cxx_project.job = linker.transform(project, cxx_project, object_names)
-            
+
         return cxx_project
             
     def transform(self, project):
@@ -282,10 +289,18 @@ class CXXProject(Settings):
     def commands(self):
         return [job for job in self._jobs.values() if isinstance(job, Command)]
 
-    def add_command(self, product, cmdline=None, info=None):
+    def add_command(self, product, cmdline=None, info=None, env=None):
+        info = info or " [COMMAND] {}".format(product)
         if product in self._jobs:
             raise RuntimeError('already know about {}'.format(product))
-        job = self._jobs[product] = Command(product, cmdline, info)
+        job = self._jobs[product] = Command(product, cmdline, info, env)
+        return job
+
+    def add_source(self, path):
+        if path in self._jobs:
+            return self._jobs[path]
+        job = Source(path)
+        self._jobs[job.product] = job
         return job
 
     def add_job(self, job):

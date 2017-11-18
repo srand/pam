@@ -35,9 +35,7 @@ def _scan_deps(cxx_project, obj):
     depfile, _ = path.splitext(obj.product)
     obj._hash_clear()
     for dep in DepfileParser(depfile + ".d").dependencies:
-        if not cxx_project.get_job(dep):
-            job = pybuild.Source(dep)
-            cxx_project.add_job(job)
+        cxx_project.add_source(dep)
         cxx_project.add_dependency(obj.product, dep)
 
 
@@ -73,7 +71,7 @@ class PyBuildCXXCompiler(_ExecutableMixin, Tool):
             self._cmdline(cxx_project, source_file.path), 
             self._info(source_file.path),
             self.environ)
-        cxx_project.add_job(pybuild.Source(source_file.path))
+        cxx_project.add_source(source_file.path)
         cxx_project.add_job(obj)
         cxx_project.add_dependency(obj.product, source_file.path)
         cxx_project.add_dependency(obj.product, dir.product)

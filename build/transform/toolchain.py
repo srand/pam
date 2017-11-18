@@ -13,6 +13,7 @@ import sys
 import os
 import re
 import platform
+from copy import copy
 from build.utils import Loader
 from build.model import _Feature
 
@@ -51,6 +52,9 @@ class ToolchainLoader(Loader):
 class ToolchainAttributes(object):
     def __init__(self, toolchain):
         self.output = os.path.join("output", toolchain.name)
+
+    def get_project_output(self, project):
+        return os.path.join(self.output, project.name)
 
 
 class Toolchain(object):
@@ -101,6 +105,12 @@ class Toolchain(object):
     @property
     def supported(self):
         return all([req.satisfied for req in self._requirements])
+
+    def get_extended_pathenv(self, toolchain, deps):
+        env = copy(os.environ)
+        for dep in deps:
+            env["PATH"] = toolchain.attributes.get_project_output(dep.project) + os.pathsep + env["PATH"]
+        return env
 
     def transform(self, project):
         pass

@@ -11,7 +11,9 @@
 
 from build.feature import Feature
 from build.model import CXXLibrary
-import os
+from build.transform import pybuild
+from build.tools.directory import PyBuildDirectoryCreator
+from os import path
 
 
 class _PyBuildCustomCFlag(Feature):
@@ -146,7 +148,7 @@ class _PyBuildProjectDeps(Feature):
     def transform(self, project, cxx_project, toolchain, **kwargs):
         for dep in project.get_dependencies(toolchain):
             if isinstance(dep.project, CXXLibrary):            
-                libpath = os.path.join(toolchain.attributes.output, dep.project.name)
+                libpath = path.join(toolchain.attributes.output, dep.project.name)
                 cxx_project.add_linkflag('{}{}'.format(self.prefix, libpath))
                 cxx_project.add_library(dep.project.name)            
 
@@ -181,3 +183,4 @@ class GNUFeatureFactory:
         toolchain.add_feature(PyBuildProjectLibPaths.GNU)
         toolchain.add_feature(PyBuildProjectDeps.GNU)
         toolchain.add_feature(PyBuildProjectLibraries.GNU)
+
