@@ -94,8 +94,11 @@ class PyBuildCXXArchiver(_ExecutableMixin, Tool):
     def _product(self, cxx_project):
         return '{output}/{}{}{}'.format(self._output_pfx, cxx_project.name, self._output_ext, output=cxx_project.output)
 
+    def _filelist(self, cxx_project):
+        return self._product(cxx_project) + ".objects"
+
     def _cmdline(self, cxx_project, object_files):
-        return "{} cr {} {}".format(self.executable, self._product(cxx_project), ' '.join(object_files))
+        return "{} cr {} @{}".format(self.executable, self._product(cxx_project), self._filelist(cxx_project))
 
     def _info(self, cxx_project):
         return ' [{}] {}'.format(self.bare_executable.upper(), cxx_project.name)
@@ -108,8 +111,11 @@ class PyBuildCXXArchiver(_ExecutableMixin, Tool):
             self._cmdline(cxx_project, object_files), 
             self._info(cxx_project),
             self.environ)
+        filelist = cxx_project.add_filelist(self._filelist(cxx_project), object_files)
         cxx_project.add_job(library)
         cxx_project.add_dependency(library.product, dir.product)
+        cxx_project.add_dependency(library.product, filelist.product)
+        cxx_project.add_dependency(filelist.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(library.product, obj)
 
@@ -130,15 +136,18 @@ class PyBuildCXXLinker(_ExecutableMixin, Tool):
     def _product(self, cxx_project):
         return '{output}/{}{}'.format(cxx_project.name, self._output_ext, output=cxx_project.output)
 
+    def _filelist(self, cxx_project):
+        return self._product(cxx_project) + ".objects"
+
     def _cmdline(self, project, cxx_project, object_files):
         libpaths = ['-L{output}/{lib}'.format(output=cxx_project.toolchain.attributes.output, lib=lib) for lib in cxx_project.libraries]
         libraries = ['-l{}'.format(path) for path in cxx_project.libraries]
         flags = cxx_project.linkflags
 
-        return "{} {} {} -o {} {} -Wl,--start-group {} -Wl,--end-group".format(
+        return "{} {} @{} -o {} {} -Wl,--start-group {} -Wl,--end-group".format(
             self.executable, 
             ' '.join(flags),
-            ' '.join(object_files),
+            self._filelist(cxx_project),
             self._product(cxx_project),
             ' '.join(libpaths),
             ' '.join(libraries))
@@ -154,8 +163,11 @@ class PyBuildCXXLinker(_ExecutableMixin, Tool):
             self._cmdline(project, cxx_project, object_files), 
             self._info(cxx_project),
             self.environ)
-        cxx_project.add_job(executable)                            
+        filelist = cxx_project.add_filelist(self._filelist(cxx_project), object_files)
+        cxx_project.add_job(executable)
         cxx_project.add_dependency(executable.product, dir.product)
+        cxx_project.add_dependency(executable.product, filelist.product)
+        cxx_project.add_dependency(filelist.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(executable.product, obj)
 

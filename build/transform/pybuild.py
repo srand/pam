@@ -320,6 +320,10 @@ class CXXProject(Settings):
     def commands(self):
         return [job for job in self._jobs.values() if isinstance(job, Command)]
 
+    @property
+    def jobs(self):
+        return self._jobs.values()
+
     def add_command(self, product, cmdline=None, info=None, env=None):
         info = info or " [COMMAND] {}".format(product)
         if product in self._jobs:
