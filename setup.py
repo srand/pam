@@ -52,7 +52,7 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='build msbuild xcode make nmake',
+    keywords='build msbuild xcode make pam bazel',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().

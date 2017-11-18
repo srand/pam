@@ -1,6 +1,5 @@
 from build.transform import msbuild 
 from build.transform import pybuild
-from build.transform import nmake
 from build.transform import toolchain
 from build.transform.toolchain import ToolchainExtender
 
@@ -294,48 +293,6 @@ win_x64_vs15.add_tool('.cpp', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x64_vs1
 win_x64_vs15.add_tool('.cxx', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x64_vs15_env))
 win_x64_vs15.archiver = msvc.PyBuildCXXArchiver(env=_win_x64_vs15_env)
 win_x64_vs15.linker = msvc.PyBuildCXXLinker(env=_win_x64_vs15_env)
-
-
-
-win_x86_vs14_nmake = nmake.CXXToolchain("windows-x86-nmake-vs14", _win_x86_vs14_env)
-win_x86_vs14_nmake.add_tool('.S', msvc.PyBuildCXXCompiler(cxx=False, env=_win_x86_vs14_env))
-win_x86_vs14_nmake.add_tool('.c', msvc.PyBuildCXXCompiler(cxx=False, env=_win_x86_vs14_env))
-win_x86_vs14_nmake.add_tool('.cc', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x86_vs14_env))
-win_x86_vs14_nmake.add_tool('.cpp', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x86_vs14_env))
-win_x86_vs14_nmake.add_tool('.cxx', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x86_vs14_env))
-win_x86_vs14_nmake.archiver = msvc.PyBuildCXXArchiver(env=_win_x86_vs14_env)
-win_x86_vs14_nmake.linker = msvc.PyBuildCXXLinker(env=_win_x86_vs14_env)
-win_x86_vs14_nmake.add_requirement(HostRequirement.WINDOWS)
-win_x86_vs14_nmake.add_requirement(_vs14_env_req)
-win_x86_vs14_nmake.add_requirement(_vs14_path_req)
-win_x86_vs14_nmake.add_feature(FeatureError('c++14 is not supported by vs14'), 'language-c++14')
-win_x86_vs14_nmake.add_feature(FeatureError('c++17 is not supported by vs14'), 'language-c++17')
-win_x86_vs14_nmake.add_feature(PyBuildOptimize.MSVC, 'optimize')
-win_x86_vs14_nmake.add_feature(PyBuildProjectMacros.MSVC)
-win_x86_vs14_nmake.add_feature(PyBuildProjectIncPaths.MSVC)
-win_x86_vs14_nmake.add_feature(PyBuildProjectLibPaths.MSVC)
-win_x86_vs14_nmake.add_feature(PyBuildProjectDeps.MSVC)
-win_x86_vs14_nmake.add_feature(PyBuildProjectLibraries.MSVC)
-
-win_x64_vs14_nmake = nmake.CXXToolchain("windows-x64-nmake-vs14", _win_x64_vs14_env)
-win_x64_vs14_nmake.add_tool('.S', msvc.PyBuildCXXCompiler(cxx=False, env=_win_x64_vs14_env))
-win_x64_vs14_nmake.add_tool('.c', msvc.PyBuildCXXCompiler(cxx=False, env=_win_x64_vs14_env))
-win_x64_vs14_nmake.add_tool('.cc', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x64_vs14_env))
-win_x64_vs14_nmake.add_tool('.cpp', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x64_vs14_env))
-win_x64_vs14_nmake.add_tool('.cxx', msvc.PyBuildCXXCompiler(cxx=True, env=_win_x64_vs14_env))
-win_x64_vs14_nmake.archiver = msvc.PyBuildCXXArchiver(env=_win_x64_vs14_env)
-win_x64_vs14_nmake.linker = msvc.PyBuildCXXLinker(env=_win_x64_vs14_env)
-win_x64_vs14_nmake.add_requirement(HostRequirement.WINDOWS)
-win_x64_vs14_nmake.add_requirement(_vs14_env_req)
-win_x64_vs14_nmake.add_requirement(_vs14_path_req)
-win_x64_vs14_nmake.add_feature(FeatureError('c++14 is not supported by vs14'), 'language-c++14')
-win_x64_vs14_nmake.add_feature(FeatureError('c++17 is not supported by vs14'), 'language-c++17')
-win_x64_vs14_nmake.add_feature(PyBuildOptimize.MSVC, 'optimize')
-win_x64_vs14_nmake.add_feature(PyBuildProjectMacros.MSVC)
-win_x64_vs14_nmake.add_feature(PyBuildProjectIncPaths.MSVC)
-win_x64_vs14_nmake.add_feature(PyBuildProjectLibPaths.MSVC)
-win_x64_vs14_nmake.add_feature(PyBuildProjectDeps.MSVC)
-win_x64_vs14_nmake.add_feature(PyBuildProjectLibraries.MSVC)
 
 
 vs14_clang = pybuild.CXXToolchain("pam-clang-vs14")

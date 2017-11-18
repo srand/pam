@@ -146,7 +146,6 @@ The following builtin toolchains are available:
 - windows-x64-msbuild-vs12
 - windows-x64-msbuild-vs14
 - windows-x64-msbuild-vs15
-- windows-x64-nmake-vs14
 - windows-x64-pam-clang-vs14
 - windows-x64-pam-vs12
 - windows-x64-pam-vs14
@@ -154,7 +153,6 @@ The following builtin toolchains are available:
 - windows-x86-msbuild-vs12
 - windows-x86-msbuild-vs14
 - windows-x86-msbuild-vs15
-- windows-x86-nmake-vs14
 - windows-x86-pam-clang-vs14
 - windows-x86-pam-vs12
 - windows-x86-pam-vs14
