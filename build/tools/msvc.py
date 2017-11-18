@@ -122,7 +122,7 @@ class PyBuildCXXCompiler(Tool):
             self._cmdline(cxx_project, source_file.path), 
             self._info(source_file.path),
             self._env)
-        cxx_project.add_job(pybuild.Source(source_file.path))
+        cxx_project.add_source(source_file.path)
         cxx_project.add_job(obj)
         cxx_project.add_dependency(obj.product, source_file.path)
         cxx_project.add_dependency(obj.product, dir.product)

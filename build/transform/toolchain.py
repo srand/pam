@@ -106,10 +106,13 @@ class Toolchain(object):
     def supported(self):
         return all([req.satisfied for req in self._requirements])
 
-    def get_extended_pathenv(self, toolchain, deps):
-        env = copy(os.environ)
-        for dep in deps:
-            env["PATH"] = toolchain.attributes.get_project_output(dep.project) + os.pathsep + env["PATH"]
+    def get_dependency_paths(self, toolchain, deps):
+        return [toolchain.attributes.get_project_output(dep.project) for dep in deps]
+
+    def get_dependency_pathenv(self, toolchain, deps, env=None):
+        env = copy(env or os.environ)
+        for path in self.get_dependency_paths(toolchain, deps):
+            env["PATH"] = path + os.pathsep + env["PATH"]
         return env
 
     def transform(self, project):
@@ -120,7 +123,7 @@ class ToolchainExtender(Toolchain):
     def __init__(self, name, toolchain):
         super(ToolchainExtender, self).__init__(name)
         self.toolchain = toolchain if isinstance(toolchain, Toolchain) else ToolchainRegistry.find(toolchain)
-        self._used_features = []        
+        self._used_features = []
 
     @property
     def supported(self):

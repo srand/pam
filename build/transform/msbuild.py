@@ -634,6 +634,7 @@ class FilterProject(Project):
 @Attribute('CustomBuildBeforeTargets', child=True)
 @Attribute('DefaultLanguage', child=True)
 @Attribute('EnableDotNetNativeCompatibleProfile', child=True)
+@Attribute('ExecutablePath', child=True)
 @Attribute('IntDir', child=True)
 @Attribute('GenerateManifest', child=True)
 @Attribute('Keyword', child=True)
@@ -729,6 +730,17 @@ class CXXProject(Project):
         self.properties_group.intdir = "{}/{}/".format(toolchain.attributes.output, project.name)
         self.properties_group.outdir = "{}/{}/".format(toolchain.attributes.output, project.name)
         self.properties_group.targetpath = "$(OutDir)$(TargetName)$(TargetExt)"
+        self.properties_group.custombuildbeforetargets = "ClCompile"
+        executable_path = toolchain.get_dependency_paths(
+            toolchain, project.get_dependencies(toolchain))
+        executable_path.extend([
+            "$(VC_ExecutablePath_{})".format(toolchain.platform),
+            "$(WindowsSDK_ExecutablePath)",
+            "$(VS_ExecutablePath)",
+            "$(MSBuild_ExecutablePath)",
+            "$(FxCopDir)",
+            "$(PATH)"])
+        self.properties_group.executablepath = ";".join(executable_path)
 
         self._macros = []
         self._incdir = []
@@ -776,9 +788,21 @@ class CXXProject(Project):
         self._deps.append(dep + ".lib")
         self.link.additionaldependencies = ";".join(self._deps + ["%(AdditionalDependencies)"])
 
+    def add_command(self, product, cmdline, inputs=None):
+        cbs = self.definitions_group.create_custombuildstep()
+        cbs.command = cmdline
+        cbs.outputs = product
+        cbs.inputs = ";".join(inputs)
+        return cbs
+
     def transform(self):
+        env = self.toolchain.get_dependency_pathenv(
+            self.toolchain, 
+            self.project.get_dependencies(self.toolchain),
+            dict(self.toolchain.vcvars))
+
         rc, stdout, stderr = utils.execute('MSBuild.exe {}.vcxproj /m  /p:Configuration={} /p:Platform={platform}'.format(
-            self.project.name, self.toolchain.config, platform=self.toolchain.platform), self.toolchain.vcvars)
+            self.project.name, self.toolchain.config, platform=self.toolchain.platform), env)
         if rc != 0:
             raise RuntimeError()
         return True
@@ -801,6 +825,9 @@ class CXXToolchain(Toolchain):
         toolchain.apply_features(project, cxx_project, toolchain)
 
         filter_project = FilterProject()
+
+        for command in project.get_commands(toolchain):
+            job = cxx_project.add_command(command.output, command.cmdline, inputs=command.inputs)
 
         groups = project.source_groups + [project]
         for group in groups:

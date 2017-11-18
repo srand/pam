@@ -237,7 +237,7 @@ class CXXToolchain(Toolchain):
         cxx_project = CXXProject(toolchain, project.name)
         cxx_project.toolchain.apply_features(project, cxx_project, toolchain)
 
-        path_env = self.get_extended_pathenv(toolchain, project.get_dependencies(toolchain))
+        path_env = self.get_dependency_pathenv(toolchain, project.get_dependencies(toolchain))
         for command in project.get_commands(toolchain):
             job = cxx_project.add_command(command.output, command.cmdline, env=path_env)
             for input in command.inputs:
@@ -280,7 +280,7 @@ class CXXProject(Settings):
         self.name = name
         self.toolchain = toolchain
         self.output = path.join(toolchain.attributes.output, name)
-        
+
     @property
     def objects(self):
         return [job for job in self._jobs.values() if isinstance(job, Object)]
@@ -293,7 +293,8 @@ class CXXProject(Settings):
         info = info or " [COMMAND] {}".format(product)
         if product in self._jobs:
             raise RuntimeError('already know about {}'.format(product))
-        job = self._jobs[product] = Command(product, cmdline, info, env)
+        job = Command(product, cmdline, info, env)
+        self._jobs[job.product] = job
         return job
 
     def add_source(self, path):
@@ -313,11 +314,13 @@ class CXXProject(Settings):
         return self._jobs.get(path.normpath(job)) 
        
     def add_dependency(self, product1, product2):
-        if product1 not in self._jobs:
+        job1 = self.get_job(product1)
+        job2 = self.get_job(product2)
+        if not job1:
+            print(self._jobs.keys())
             raise RuntimeError('{} not known'.format(product1))
-        if product2 not in self._jobs:
+        if not job2:
             raise RuntimeError('{} not known'.format(product2))
-        job1, job2 = self._jobs[product1], self._jobs[product2]
         job1.add_dependency(job2)
 
     def transform(self):
