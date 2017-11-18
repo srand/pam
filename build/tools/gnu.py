@@ -33,7 +33,7 @@ class _ExecutableMixin(object):
 
 def _scan_deps(cxx_project, obj):
     depfile, _ = path.splitext(obj.product)
-    obj._hash_clear()
+    obj.clear_hash()
     for dep in DepfileParser(depfile + ".d").dependencies:
         cxx_project.add_source(dep)
         cxx_project.add_dependency(obj.product, dep)

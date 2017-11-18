@@ -89,6 +89,10 @@ class Job(object):
     def completed(self):
         return self._completed
 
+    def set_completed(self):
+        self._completed = True
+        self.on_completed(self)
+
     @property
     def required(self):
         if self._required is None:
@@ -125,7 +129,7 @@ class Source(Job):
     def __init__(self, source):
         super(Source, self).__init__(source)
 
-    def _hash(self):
+    def get_hash(self):
         m = hashlib.sha256()
         if path.exists(self.product):
             m.update(str(stat(self.product)))
@@ -134,13 +138,67 @@ class Source(Job):
         return m.hexdigest()
 
 
-class Command(Job):
+class HashableMixin(object):
+    def __init__(self, *args, **kwargs):
+        super(HashableMixin, self).__init__(*args, **kwargs)
+        self._hc = None
+
+    def get_hash(self):
+        if self._hc is not None:
+            return self._hc
+        m = hashlib.sha256()
+        self.populate_hash(m)
+        self._hc = m.hexdigest()
+        return self._hc
+
+    def clear_hash(self):
+        self._hc = None
+
+    def store_hash(self):
+        product_hash = self.product + ".hash"
+        digest = self.get_hash()
+        with open(product_hash, "w") as f:
+            f.write(digest)
+
+    def _load_hash(self):
+        product_hash = self.product + ".hash"
+        if path.exists(product_hash):
+            with open(product_hash) as f:
+                return f.read()
+        return None
+    
+    @property
+    def required(self):
+        stored_hash = self._load_hash()
+        return stored_hash != self.get_hash()
+
+
+class FileList(HashableMixin, Job):
+    def __init__(self, product, files):
+        super(FileList, self).__init__(product)
+        self.files = files
+
+    @property 
+    def info(self):
+        return " [FILELIST] {}".format(self.product)
+
+    def populate_hash(self, m):
+        m.update(" ".join(self.files))
+
+    def execute(self):
+        if self.completed: return
+        with open(self.product, "w") as f:
+            f.write(" ".join(self.files))
+        self.set_completed()
+        self.store_hash()
+
+
+class Command(HashableMixin, Job):
     def __init__(self, product, cmdline, info=None, env=None):
         super(Command, self).__init__(product)
         self._cmdline = cmdline
         self._info = info
         self._env = env
-        self._hc = None
 
     @property
     def cmdline(self):
@@ -150,37 +208,11 @@ class Command(Job):
     def info(self):
         return self._info
 
-    def _hash(self):
-        if self._hc is not None:
-            return self._hc
-        m = hashlib.sha256()
+    def populate_hash(self, m):
         for dep in self.dependencies():
-            m.update(self.get_dependency(dep)._hash())
+            m.update(self.get_dependency(dep).get_hash())
         m.update(self._cmdline)
         m.update(self._info)
-        self._hc = m.hexdigest()
-        return self._hc
-
-    def _hash_clear(self):
-        self._hc = None
-
-    def _hash_store(self):
-        product_hash = self.product + ".hash"
-        digest = self._hash()
-        with open(product_hash, "w") as f:
-            f.write(digest)
-
-    def _hash_fetch(self):
-        product_hash = self.product + ".hash"
-        if path.exists(product_hash):
-            with open(product_hash) as f:
-                return f.read()
-        return None
-
-    @property
-    def required(self):
-        stored_hash = self._hash_fetch()
-        return stored_hash != self._hash()
 
     def execute(self):
         if self.completed: return
@@ -191,9 +223,8 @@ class Command(Job):
             utils.print_locked("{}", "\n".join(stdout))
             utils.print_locked("{}", "\n".join(stderr))
             raise RuntimeError('job failed: ' + self._cmdline)
-        self._completed = True
-        self.on_completed(self)
-        self._hash_store()
+        self.set_completed()
+        self.store_hash()
 
 
 class Object(Command):
@@ -301,6 +332,13 @@ class CXXProject(Settings):
         if path in self._jobs:
             return self._jobs[path]
         job = Source(path)
+        self._jobs[job.product] = job
+        return job
+
+    def add_filelist(self, path, files):
+        if path in self._jobs:
+            return self._jobs[path]
+        job = FileList(path, files)
         self._jobs[job.product] = job
         return job
 

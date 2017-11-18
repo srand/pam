@@ -142,11 +142,14 @@ class PyBuildCXXArchiver(Tool):
     def _product(self, cxx_project):
         return path.join(cxx_project.output, '{}{}{}'.format(self._output_pfx, cxx_project.name, self._output_ext))
 
+    def _filelist(self, cxx_project):
+        return self._product(cxx_project) + ".objects"
+
     def _cmdline(self, cxx_project, object_files):
-        return "{} /nologo /out:{} {}".format(
+        return "{} /nologo /out:{} @{}".format(
             self._executable,
             self._product(cxx_project), 
-            ' '.join(object_files))
+            self._filelist(cxx_project))
 
     def _info(self, cxx_project):
         return ' [{}] {}'.format(self._executable.upper(), cxx_project.name)
@@ -159,8 +162,11 @@ class PyBuildCXXArchiver(Tool):
             self._cmdline(cxx_project, object_files), 
             self._info(cxx_project),
             self._env)
+        filelist = cxx_project.add_filelist(self._filelist(cxx_project), object_files)
         cxx_project.add_job(library)
         cxx_project.add_dependency(library.product, dir.product)
+        cxx_project.add_dependency(library.product, filelist.product)
+        cxx_project.add_dependency(filelist.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(library.product, obj)
         return library
@@ -180,16 +186,19 @@ class PyBuildCXXLinker(Tool):
         return path.join(cxx_project.output, '{}{}'.format(
             cxx_project.name, self._output_ext_dll if hasattr(project, "shared") and project.shared else self._output_ext))
 
+    def _filelist(self, project, cxx_project):
+        return self._product(project, cxx_project) + ".objects"
+
     def _cmdline(self, project, cxx_project, object_files):
         libraries = ['{lib}.lib'.format(output=cxx_project.toolchain.attributes.output, lib=lib) for lib in cxx_project.libraries]
         flags = cxx_project.linkflags
 
-        return "{} /nologo {} {} {} {} /out:{}".format(
+        return "{} /nologo {} {} {} @{} /out:{}".format(
             self._executable, 
             '/dll' if hasattr(project, "shared") and project.shared else '',
             ' '.join(libraries),
             ' '.join(flags),
-            ' '.join(object_files),
+            self._filelist(project, cxx_project),
             self._product(project, cxx_project))
 
     def _info(self, cxx_project):
@@ -203,8 +212,11 @@ class PyBuildCXXLinker(Tool):
             self._cmdline(project, cxx_project, object_files), 
             self._info(cxx_project),
             self._env)
+        filelist = cxx_project.add_filelist(self._filelist(project, cxx_project), object_files)
         cxx_project.add_job(executable)                            
         cxx_project.add_dependency(executable.product, dir.product)
+        cxx_project.add_dependency(executable.product, filelist.product)
+        cxx_project.add_dependency(filelist.product, dir.product)
         for obj in object_files:
             cxx_project.add_dependency(executable.product, obj)
         return executable
