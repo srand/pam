@@ -325,6 +325,7 @@ class CXXProject(Settings):
         return self._jobs.values()
 
     def add_command(self, product, cmdline=None, info=None, env=None):
+        product = path.normpath(product)
         info = info or " [COMMAND] {}".format(product)
         if product in self._jobs:
             raise RuntimeError('already know about {}'.format(product))

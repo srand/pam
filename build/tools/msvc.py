@@ -104,7 +104,7 @@ class PyBuildCXXCompiler(Tool):
     def _cmdline(self, cxx_project, source_file):
         flags = cxx_project.cflags if not self._cxx else cxx_project.cxxflags
 
-        return "{} /nologo {} /c /T{}{} /Fo{}".format(
+        return "{} /nologo {} /c /T{}{} /Gm /Fo{}".format(
             self._executable, 
             ' '.join(flags),
             'p' if self._cxx else 'c',

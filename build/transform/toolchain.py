@@ -15,7 +15,7 @@ import re
 import platform
 from copy import copy
 from build.utils import Loader
-from build.model import _Feature
+from build.model import _Feature, CXXExecutable, CXXLibrary
 
 
 class ToolchainRegistry(object):
@@ -107,6 +107,9 @@ class Toolchain(object):
         return all([req.satisfied for req in self._requirements])
 
     def get_dependency_paths(self, toolchain, deps):
+        deps = [dep for dep in deps
+                if isinstance(dep.project, CXXExecutable)
+                or (isinstance(dep.project, CXXLibrary) and dep.project.shared)]
         return [toolchain.attributes.get_project_output(dep.project) for dep in deps]
 
     def get_dependency_pathenv(self, toolchain, deps, env=None):
