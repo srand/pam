@@ -54,6 +54,10 @@ class Source(_Filtered):
         self.args = args
         _, self.tool = (None, tool) if tool is not None else os.path.splitext(self.path)
 
+    @property
+    def sources(self):
+        return [self]
+
 
 class SourceGroup(object):
     """ A collection of source files.
@@ -71,7 +75,7 @@ class SourceGroup(object):
         self._sources = []
         self.name = name
 
-    def add_sources(self, path, regex=r'.*', recurse=False, filter=None, tool=None, **kwargs):
+    def add_sources(self, path, regex=r'.*', recurse=False, filter=None, tool=None, files=None, **kwargs):
         """ Add sources from **path** to the group. Directories will be enumerated, 
         but child directories won't unless **recurse** is True. **regex** can be used
         to filter the resulting list of files. 
@@ -111,7 +115,11 @@ class SourceGroup(object):
                 matching_files = [file for file in all_files if re.match(regex, file)]
                 self._sources = [Source(source_file, filter, tool, kwargs) for source_file in matching_files]
                 return self._sources
-        self._sources.append(_LazySource(path, regex, recurse, filter, tool, **kwargs))
+        if not files:
+            self._sources.append(_LazySource(path, regex, recurse, filter, tool, **kwargs))
+        else:
+            for src in files:
+                self._sources.append(Source(os.path.join(path, src), filter, tool, **kwargs))
 
     @property
     def sources(self):

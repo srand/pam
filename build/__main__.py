@@ -88,7 +88,7 @@ available toolchains:
         def _build(project):
             for dependency in project.dependencies:
                 _build(dependency.project)
-            if project.is_toolchain_agnostic:
+            if project.is_toolchain_agnostic and not project.toolchains:
                 transform(project)
             for toolchain_name in project.toolchains:
                 if not re.search(args.toolchain, toolchain_name):

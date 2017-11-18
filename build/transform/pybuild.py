@@ -213,7 +213,7 @@ class CXXToolchain(Toolchain):
 
     def get_tool(self, extension):
         if extension not in self._tools:
-            raise RuntimeError('could not find tool for {} extension'.format(extension))
+            raise RuntimeError('could not find tool for file with extension: "{}"'.format(extension))
         return self._tools[extension]
         
     @property
@@ -243,8 +243,6 @@ class CXXToolchain(Toolchain):
                 if not source.matches(toolchain.name):
                     continue
                 tool = toolchain.get_tool(source.tool)
-                if tool is None:
-                    raise RuntimeError()
                 tool.transform(cxx_project, source)
 
         if isinstance(project, model.CXXLibrary):
