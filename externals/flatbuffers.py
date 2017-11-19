@@ -1,4 +1,4 @@
-from build.model import CXXLibrary, CXXExecutable, GitClone
+from build.model import CXXLibrary, CXXExecutable, GitClone, Source
 from build.tools import Tool, ToolRegistry
 from build.transform import pybuild, msbuild
 from build.tools.directory import PyBuildDirectoryCreator
