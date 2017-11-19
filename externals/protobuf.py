@@ -1,6 +1,58 @@
-from build.model import CXXExecutable, CXXLibrary, GitClone, PythonProject, DependencyGroup
-from build.transform import utils
+from build.model import CXXExecutable, CXXLibrary, GitClone, PythonProject, DependencyGroup, Source
+from build.transform import utils, msbuild, pybuild
+from build.tools import ToolRegistry, Tool
+from build.tools.directory import PyBuildDirectoryCreator
+from build.utils import Dispatch, multidispatch
 import os
+
+
+class ProtobufCompiler(Tool):
+    dispatch = Dispatch()
+
+    def __init__(self, *args, **kwargs):
+        super(ProtobufCompiler, self).__init__(*args, **kwargs)
+        self._output_ext = ".pb.cc"
+
+    def _directory(self, cxx_project, dirname):
+        return PyBuildDirectoryCreator().transform(cxx_project, dirname)
+
+    def _product(self, cxx_project, source_file):
+        b,e = os.path.splitext(source_file)
+        return '{output}/{}{}'.format(b, self._output_ext, output=cxx_project.output)
+
+    def _cmdline(self, cxx_project, source_file):
+        incdirs = cxx_project.project.get_incpaths(cxx_project.toolchain, True)
+        return "protoc {} --proto_path={} --cpp_out={} {}".format(
+            source_file,
+            os.path.dirname(source_file),
+            os.path.dirname(self._product(cxx_project, source_file)),
+            " ".join(set(["-I {}".format(dir.path) for dir in incdirs])))
+
+    def _info(self, source_file):
+        return ' [PROTOC] {}'.format(source_file)
+
+    @multidispatch(dispatch, pybuild.CXXProject, Source)
+    def transform(self, cxx_project, source_file):
+        product = self._product(cxx_project, source_file.path)
+        dir = self._directory(cxx_project, os.path.dirname(product))
+        cxx_project.add_source(source_file.path)
+        cxx_project.add_command(product, self._cmdline(cxx_project, source_file.path), self._info(source_file.path))
+        cxx_project.add_dependency(product, source_file.path)
+        cxx_project.add_dependency(product, dir.product)
+
+        tool = cxx_project.toolchain.get_tool(".cc")
+        return tool.transform(cxx_project, Source(product))
+
+    #@multidispatch(dispatch, msbuild.CXXProject, Source)
+    #def transform(self, cxx_project, source_file):
+    #    pass
+
+    @multidispatch(dispatch)
+    def transform(self, cxx_project, source_file):
+        raise RuntimeError("protobuffers not supported in this toolchain")
+
+
+ToolRegistry.add(".proto", ProtobufCompiler())
 
 
 source = GitClone(
@@ -226,3 +278,8 @@ protoc_lib.add_command(
 protoc = CXXExecutable("protoc")
 protoc.add_dependency(protoc_lib)
 protoc.add_sources("output/protobuf-source/src/google/protobuf/compiler/main.cc")
+
+
+example = CXXLibrary("protobuf-addressbook")
+example.add_dependency(protoc)
+example.add_sources("output/protobuf-source/examples/addressbook.proto")

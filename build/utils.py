@@ -41,22 +41,13 @@ class Dispatch(object):
     def __init__(self):
         self.typemap = {}
         self.default = None
-        
-    def __call__(self, *args):
-        types = tuple(arg.__class__ for arg in args)
-        function = self.typemap.get(types)
-        if function is None:
-            function = self.default
-        if function is None:
-            raise TypeError("no match")
-        return function(*args)
 
-    def add_method(self, types, function):
+    def add(self, types, function):
         if types in self.typemap:
             raise TypeError("duplicate registration of method")
         self.typemap[types] = function
 
-    def add_default_method(self, function):
+    def set_default(self, function):
         if self.default is not None:
             raise TypeError("duplicate registration of default method")
         self.default = function
@@ -65,10 +56,19 @@ class Dispatch(object):
 def multidispatch(dispatch, *types):
     def register(function):
         if len(types) > 0:
-            dispatch.add_method(types, function)
+            dispatch.add(types, function)
         else:
-            dispatch.add_default_method(function)
-        return dispatch
+            dispatch.set_default(function)
+        def _call(*args):
+            types = tuple(arg.__class__ for arg in args[1:])
+            function = dispatch.typemap.get(types)
+            if function is None:
+                function = dispatch.default
+            if function is None:
+                raise TypeError("no match")
+            return function(*args)
+        return _call
+
     return register
 
 

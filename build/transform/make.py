@@ -58,22 +58,22 @@ class CXXToolchain(pybuild.CXXToolchain):
         f.write('\n')
 
     @multidispatch(dispatch, pybuild.Command, file)
-    def _visit(job, f):
+    def _visit(self, job, f):
         CXXToolchain._visit_cmd(job, f)
 
     @multidispatch(dispatch, pybuild.Object, file)
-    def _visit(job, f):
+    def _visit(self, job, f):
         CXXToolchain._visit_cmd(job, f)
         depfile,_ = os.path.splitext(job.product)
         f.write("-include {depfile}.d\n".format(depfile=depfile))
         f.write("\n")
 
     @multidispatch(dispatch, Directory, file)
-    def _visit(job, f):
+    def _visit(self, job, f):
         CXXToolchain._visit_cmd(job, f)
 
     @multidispatch(dispatch, pybuild.FileList, file)
-    def _visit(job, f):
+    def _visit(self, job, f):
         f.write('{product}:\n'.format(product=job.product))
         f.write('\t@echo {info}\n'.format(info=job.info))
         f.write('\t@rm -f {product}\n'.format(product=job.product))
@@ -82,7 +82,7 @@ class CXXToolchain(pybuild.CXXToolchain):
         f.write('\n')
 
     @multidispatch(dispatch)
-    def _visit(job, f):
+    def _visit(self, job, f):
         pass
 
     def generate(self, project, toolchain=None):
@@ -94,7 +94,7 @@ class CXXToolchain(pybuild.CXXToolchain):
             for job in cxx_project.jobs:
                 self._visit(job, f)
             
-        return CXXProject(toolchain, project.name)
+        return CXXProject(toolchain, project)
         
         
     def transform(self, project):

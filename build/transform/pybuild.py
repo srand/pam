@@ -235,17 +235,8 @@ class Object(Command):
 class CXXToolchain(Toolchain):
     def __init__(self, name):
         super(CXXToolchain, self).__init__(name)
-        self._tools = {}
         self._cxx_archiver = None
         self._cxx_linker = None
-
-    def add_tool(self, extension, driver):
-        self._tools[extension] = driver
-
-    def get_tool(self, extension):
-        if extension not in self._tools:
-            raise RuntimeError('could not find tool for file with extension: "{}"'.format(extension))
-        return self._tools[extension]
         
     @property
     def archiver(self):
@@ -265,7 +256,7 @@ class CXXToolchain(Toolchain):
 
     def generate(self, project, toolchain=None):
         toolchain = toolchain if toolchain else self
-        cxx_project = CXXProject(toolchain, project.name)
+        cxx_project = CXXProject(toolchain, project)
         cxx_project.toolchain.apply_features(project, cxx_project, toolchain)
 
         path_env = self.get_dependency_pathenv(toolchain, project.get_dependencies(toolchain))
@@ -305,12 +296,16 @@ class CXXToolchain(Toolchain):
 
 
 class CXXProject(Settings):
-    def __init__(self, toolchain, name):
+    def __init__(self, toolchain, project):
         super(CXXProject, self).__init__()
         self._jobs = OrderedDict()
-        self.name = name
+        self.project = project
         self.toolchain = toolchain
-        self.output = path.join(toolchain.attributes.output, name)
+        self.output = path.join(toolchain.attributes.output, project.name)
+
+    @property
+    def name(self):
+        return self.project.name
 
     @property
     def objects(self):

@@ -16,6 +16,7 @@ import platform
 from copy import copy
 from build.utils import Loader
 from build.model import _Feature, CXXExecutable, CXXLibrary
+from build.tools import ToolRegistry
 
 
 class ToolchainRegistry(object):
@@ -95,6 +96,9 @@ class Toolchain(object):
         self._tools[extension] = driver
 
     def get_tool(self, extension):
+        tool = ToolRegistry.find(extension)
+        if tool:
+            return tool
         if extension not in self._tools:
             raise RuntimeError('could not find tool for {} extension'.format(extension))
         return self._tools[extension]
