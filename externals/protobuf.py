@@ -31,8 +31,7 @@ class ProtobufCompiler(Tool):
     def _info(self, source_file):
         return ' [PROTOC] {}'.format(source_file)
 
-    @multidispatch(dispatch, pybuild.CXXProject, Source)
-    def transform(self, cxx_project, source_file):
+    def transform_pybuild(self, cxx_project, source_file):
         product = self._product(cxx_project, source_file.path)
         dir = self._directory(cxx_project, os.path.dirname(product))
         cxx_project.add_source(source_file.path)
@@ -43,12 +42,30 @@ class ProtobufCompiler(Tool):
         tool = cxx_project.toolchain.get_tool(".cc")
         return tool.transform(cxx_project, Source(product))
 
-    #@multidispatch(dispatch, msbuild.CXXProject, Source)
-    #def transform(self, cxx_project, source_file):
-    #    pass
+    def transform_msbuild(self, cxx_project, sources):
+        generated_srcs = []
+        ig = cxx_project.create_item_group()
+        for source_file in sources:
+            product = self._product(cxx_project, source_file.path)
+            ig.add_command(
+                product,
+                self._cmdline(cxx_project, source_file.path),
+                source_file.path)
+            generated_srcs.append(Source(product))
+        tool = cxx_project.toolchain.get_tool(".cc")
+        return tool.transform(cxx_project, generated_srcs)
 
-    @multidispatch(dispatch)
+    def transform_msbuild_filter(self, cxx_project, sources):
+        return self.transform_msbuild(cxx_project, sources)
+
     def transform(self, cxx_project, source_file):
+        print(source_file)
+        if isinstance(cxx_project, pybuild.CXXProject):
+            return self.transform_pybuild(cxx_project, source_file)
+        if isinstance(cxx_project, msbuild.CXXProject):
+            return self.transform_msbuild(cxx_project, source_file)
+        if isinstance(cxx_project, msbuild.FilterProject):
+            return self.transform_msbuild_filter(cxx_project, source_file)
         raise RuntimeError("protobuffers not supported in this toolchain")
 
 

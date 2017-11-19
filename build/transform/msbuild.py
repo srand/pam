@@ -21,6 +21,7 @@ from xml.etree.ElementTree import ElementTree
 from xml.dom import minidom
 
 import os
+from os import path
 import uuid
 from copy import deepcopy
 
@@ -497,8 +498,9 @@ class Media(SubElement):
 @Attribute('CopyToOutputDirectory', values=['Never', 'Always', 'PreserveNewest'], child=True)
 @Attribute('Include')
 class NoneTask(SubElement):
-    def __init__(self):
+    def __init__(self, include=None):
         super(NoneTask, self).__init__('NoneTask')
+        self.include = include
 
 
 @Attribute('Include')
@@ -570,6 +572,10 @@ class FilterClCompile(FilterElement):
     def __init__(self, include=None):
         super(FilterClCompile, self).__init__('ClCompile', include)
 
+class FilterCustomBuild(FilterElement):
+    def __init__(self, include=None):
+        super(FilterCustomBuild, self).__init__('CustomBuild', include)
+
 class FilterFxCompile(FilterElement):
     def __init__(self, include=None):
         super(FilterFxCompile, self).__init__('FxCompile', include)
@@ -601,6 +607,7 @@ class Filter(SubElement):
 @Composition(Filter, 'filter')
 @Composition(FilterAppxManifest, 'appxmanifest')
 @Composition(FilterClCompile, 'clcompile')
+@Composition(FilterCustomBuild, 'custombuild')
 @Composition(FilterFxCompile, 'fxcompile')
 @Composition(FilterContent, 'content')
 @Composition(FilterImage, 'image')
@@ -610,11 +617,20 @@ class FilterItemGroup(ItemGroup):
     def __init__(self):
         super(FilterItemGroup, self).__init__('FilterItemGroup')
 
+    def add_command(self, product, cmdline, inputs=None, info=None):
+        cbs = self.create_custombuild()
+        cbs.include = ";".join(inputs) if type(inputs) == list else inputs
+        return cbs
+
+
 @Composition(FilterItemGroup, 'item_group')
 class FilterProject(Project):
-    def __init__(self):
+    def __init__(self, toolchain, project):
         super(FilterProject, self).__init__()
         self.filters = self.create_item_group()
+        self.toolchain = toolchain
+        self.project = project
+        self.output = path.join(toolchain.attributes.output, project.name)
         
     def add_sources(self, tool, group, sources):
         ig = tool.transform(self, sources)
@@ -672,6 +688,14 @@ class CXXItemGroup(ItemGroup):
     def __init__(self):
         super(CXXItemGroup, self).__init__()
 
+    def add_command(self, product, cmdline, inputs=None, info=None):
+        cbs = self.create_custombuild()
+        cbs.command = cmdline
+        cbs.outputs = product
+        cbs.include = ";".join(inputs) if type(inputs) == list else inputs
+        cbs.message = info if info else cbs.include
+        return cbs
+
 
 @Composition(ClCompile, 'clcompile')
 @Composition(CustomBuildStep, 'custombuildstep')
@@ -691,6 +715,7 @@ class CXXProject(Project):
     def __init__(self, project, toolchain):
         super(CXXProject, self).__init__()
         self.project = project
+        self.output = path.join(toolchain.attributes.output, project.name)
         self.toolchain = toolchain
         self.tools_version = toolchain.vcvars['VisualStudioVersion']
         
@@ -788,13 +813,6 @@ class CXXProject(Project):
         self._deps.append(dep + ".lib")
         self.link.additionaldependencies = ";".join(self._deps + ["%(AdditionalDependencies)"])
 
-    def add_command(self, product, cmdline, inputs=None):
-        cbs = self.definitions_group.create_custombuildstep()
-        cbs.command = cmdline
-        cbs.outputs = product
-        cbs.inputs = ";".join(inputs)
-        return cbs
-
     def transform(self):
         env = self.toolchain.get_dependency_pathenv(
             self.toolchain, 
@@ -824,10 +842,13 @@ class CXXToolchain(Toolchain):
         cxx_project = CXXProject(project, toolchain)
         toolchain.apply_features(project, cxx_project, toolchain)
 
-        filter_project = FilterProject()
+        filter_project = FilterProject(toolchain, project)
 
-        for command in project.get_commands(toolchain):
-            job = cxx_project.add_command(command.output, command.cmdline, inputs=command.inputs)
+        commands = project.get_commands(toolchain)
+        if commands:
+            ig = cxx_project.create_item_group()
+            for command in commands:
+                job = ig.add_command(command.output, command.cmdline, inputs=command.inputs)
 
         groups = project.source_groups + [project]
         for group in groups:
