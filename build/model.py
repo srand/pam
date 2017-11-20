@@ -48,9 +48,11 @@ class ToolchainGroup(object):
 class Source(_Filtered):
     """ Representation of a project source file """
 
-    def __init__(self, path, filter=None, tool=None, args=None):
+    def __init__(self, path, filter=None, tool=None, dependencies=None, args=None):
         super(Source, self).__init__(filter)
         self.path = os.path.normpath(path)
+        depends = dependencies if dependencies is None or type(dependencies) == list else [dependencies]
+        self.depends = depends or []
         self.args = args
         _, self.tool = (None, tool) if tool is not None else os.path.splitext(self.path)
 
@@ -75,7 +77,7 @@ class SourceGroup(object):
         self._sources = []
         self.name = name
 
-    def add_sources(self, path, regex=r'.*', recurse=False, filter=None, tool=None, files=None, **kwargs):
+    def add_sources(self, path, regex=r'.*', recurse=False, filter=None, tool=None, files=None, depends=None, **kwargs):
         """ Add sources from **path** to the group. Directories will be enumerated, 
         but child directories won't unless **recurse** is True. **regex** can be used
         to filter the resulting list of files. 
@@ -92,12 +94,13 @@ class SourceGroup(object):
         the tool that becomes associated with the sources. Keys and values are tool specific. 
         """
         class _LazySource(object):
-            def __init__(self, path, regex, recurse, filter, tool, **kwargs):
+            def __init__(self, path, regex, recurse, filter, tool, depends, **kwargs):
                 self.path = path
                 self.regex = regex
                 self.recurse = recurse
                 self.filter = filter
                 self.tool = tool
+                self.depends = depends
                 self.kwargs = kwargs
                 self._sources = None
 
@@ -113,13 +116,13 @@ class SourceGroup(object):
                         all_files = os.listdir(path)
                         all_files = [os.path.join(path, file) for file in all_files]
                 matching_files = [file for file in all_files if re.match(regex, file)]
-                self._sources = [Source(source_file, filter, tool, kwargs) for source_file in matching_files]
+                self._sources = [Source(source_file, filter, tool, depends, kwargs) for source_file in matching_files]
                 return self._sources
         if not files:
-            self._sources.append(_LazySource(path, regex, recurse, filter, tool, **kwargs))
+            self._sources.append(_LazySource(path, regex, recurse, filter, tool, depends, **kwargs))
         else:
             for src in files:
-                self._sources.append(Source(os.path.join(path, src), filter, tool, **kwargs))
+                self._sources.append(Source(os.path.join(path, src), filter, tool, depends, **kwargs))
 
     @property
     def sources(self):

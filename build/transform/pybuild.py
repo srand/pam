@@ -89,6 +89,10 @@ class Job(object):
     def completed(self):
         return self._completed
 
+    @property
+    def executable(self):
+        return True
+
     def set_completed(self):
         self._completed = True
         self.on_completed(self)
@@ -128,6 +132,10 @@ class Job(object):
 class Source(Job):
     def __init__(self, source):
         super(Source, self).__init__(source)
+
+    @property
+    def executable(self):
+        return False
 
     def get_hash(self):
         m = hashlib.sha256()
@@ -273,6 +281,10 @@ class CXXToolchain(Toolchain):
                     continue
                 tool = toolchain.get_tool(source.tool)
                 tool.transform(cxx_project, source)
+                cxx_project.add_source(source.path)
+                for dep in source.depends:
+                    cxx_project.add_source(dep)
+                    cxx_project.add_dependency(source.path, dep)
 
         if isinstance(project, model.CXXLibrary):
             objects = cxx_project.objects
@@ -355,7 +367,6 @@ class CXXProject(Settings):
         job1 = self.get_job(product1)
         job2 = self.get_job(product2)
         if not job1:
-            print(self._jobs.keys())
             raise RuntimeError('{} not known'.format(product1))
         if not job2:
             raise RuntimeError('{} not known'.format(product2))
@@ -397,6 +408,7 @@ class CXXProject(Settings):
                     job = pool.get_nowait()
             except Exception as e:
                 print(e)
+                raise
                 break
 
             for job in completed:

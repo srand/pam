@@ -109,5 +109,7 @@ flatc.use_feature("language-c++11")
 example = CXXExecutable("flatbuffers-example")
 example.add_dependency(flatc)
 example.add_sources("output/flatbuffers-source/samples/monster.fbs")
-example.add_sources("output/flatbuffers-source/samples/sample_binary.cpp")
+example.add_sources(
+    "output/flatbuffers-source/samples/sample_binary.cpp",
+    dependencies="output/flatbuffers-source/samples/monster_generated.h")
 example.use_feature("language-c++11")

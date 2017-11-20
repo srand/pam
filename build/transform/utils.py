@@ -66,7 +66,7 @@ class Thread(threading.Thread):
 			if not job:
 				return
 			try:
-				if job.required and not job.completed:
+				if job.executable and job.required and not job.completed:
 					print_locked('[{}]{}', self.index, job.info)
 					job.execute()
 				self.output.put(job)
