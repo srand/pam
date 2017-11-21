@@ -19,16 +19,14 @@ First Project
 
 A simple Hello World project may look like this: 
 ::
-  from build.model import CXXExecutable
+  from build.model import cxx_executable
 
   # Create a new C++ executable project
-  hello = CXXExecutable('hello_world')
-
-  # Add the sources we want to compile and link
-  hello.add_sources('src/hello.cpp') 
-
-  # Build the project for Windows using MSBuild and VS2015
-  hello.add_toolchain('windows-x64-msbuild-vs14')
+  hello = cxx_executable(
+    name = "hello_world",
+    sources = ["src/hello.cpp"],                # Add the sources we want to compile and link
+    toolchains = ["windows-x64-msbuild-vs14"]   # Build the project for Windows using MSBuild and VS2015
+  )
 
 The project definition is saved to ``pam.py`` which is loaded by default.
 
@@ -42,7 +40,45 @@ PAM will build the ``hello_world`` project using the toolchains added to it.
 
 Second Project
 --------------
-Let's get real and have a closer look at the project API and what PAM is capable of. This time we're creating a library and linking it into an executable.
+Let's get real and have a closer look at the project API and what PAM is capable of. This time we're creating a library and linking it into an executable. Of the two different APIs presented, the first one is recommended to new users. If something is unclear, skip ahead and read the comments in the old API's example. 
+::
+  from build.model import *
+  
+  toolchains = [
+    "windows-x64-msbuild-vs15",
+    "linux-x64-pam-gcc".
+    "macosx-x64-pam-clang"
+  ]
+  
+  features = [
+    { "name": "optimize", "level": "full" },
+    "language-c++11"
+  ]
+  
+  hello = cxx_library(
+    name = "hello",
+    sources = ["src"],
+    incpaths = [ ("include", {"publish": True}) ],
+    macros = [
+      ("WINDOWS", {"filter": "windows"}),
+      ("LINUX", {"filter": "linux"}),
+      ("MACOSX", {"filter": "macosx"}),
+    ],
+    features = features,
+    toolchains = toolchains
+  )
+  
+  hello_test = cxx_executable(
+    name = "hello_test",
+    sources = ["test"],
+    dependencies = [googletest, hello],
+    features = features,
+    toolchains = toolchains
+  )
+  
+  map(googletest.add_toolchain, toolchains)
+  
+The above code can also be written like this:  
 ::
   from build.model import *
   from externals.googletest import googletest
@@ -124,19 +160,54 @@ This project is availble as an example in the repository. To build it, run:
 
 PAM will automatically select the toolchain supported on your current host machine.
 
+Custom Toolchain in a Project
+-----------------------------
+
+To extend / create new toolchains:
+::
+  from build.model import *
+  from toolchains.pam import *
+
+  # Explicit 32-bit toolchain
+  pam_gnu_toolchain(
+    "linux-x86-pam-gcc",
+    inherits="linux-pam-gcc",
+    cflags="-m32",
+    cxxflags="-m32",
+    linkflags="-m32"
+  )
+
+  # Cross compile for ARM
+  pam_gnu_toolchain(
+    "linux-arm-pam-gcc",
+    prefix="arm-linux-gnueabi-"
+  )
+
+  # Enable RTTI for MSVC
+  pam_msvc_toolchain(
+    "windows-x64-pam-vs15-rtti",
+    inherits='windows-x64-pam-vs15',
+    cxxflags="/GR",
+  )
+
+  hello = cxx_executable(
+    name = "hello",
+    sources = ["hello.cpp"],
+    toolchains = [
+      "linux-x86-pam-gcc",
+      "linux-arm-pam-gcc",
+      "windows-x64-pam-vs15-rtti"
+    ]
+  )
+
 Toolchains
 ----------
 The following builtin toolchains are available:
 
 - linux-pam-gcc
-- linux-arm-pam-gcc
-- linux-x64-pam-gcc
-- linux-x86-pam-gcc
-- linux-x64-make-gcc
-- linux-x86-make-gcc
+- linux-make-gcc
 - macosx-pam-clang
-- macosx-x64-pam-clang
-- macosx-x86-pam-clang
+- macosx-make-clang
 - windows-msbuild-vs12
 - windows-msbuild-vs14
 - windows-store-arm-msbuild-vs12
