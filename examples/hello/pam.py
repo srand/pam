@@ -6,8 +6,8 @@ from externals.googletest import googletest
 # is added for each supported platform.
 toolchains = ToolchainGroup()
 toolchains.add_toolchain("windows-x64-msbuild-vs15")
-toolchains.add_toolchain("linux-x64-pam-gcc")
-toolchains.add_toolchain("macosx-x64-pam-clang")
+toolchains.add_toolchain("linux-pam-gcc")
+toolchains.add_toolchain("macosx-pam-clang")
 
 # Similarly, use a shared set of features for all projects
 features = FeatureGroup()

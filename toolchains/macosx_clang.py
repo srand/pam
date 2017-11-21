@@ -22,13 +22,3 @@ macosx.add_feature(PyBuildProjectMacros.GNU)
 macosx.add_feature(PyBuildProjectIncPaths.GNU)
 macosx.add_feature(PyBuildProjectLibPaths.GNU)
 macosx.add_feature(PyBuildProjectDeps.GNU)
-
-macosx_x86 = ToolchainExtender("macosx-x86-pam-clang", macosx)
-macosx_x86.add_feature(PyBuildCustomCFlag('-m32'))
-macosx_x86.add_feature(PyBuildCustomCXXFlag('-m32'))
-macosx_x86.add_feature(PyBuildCustomLinkerFlag('-m32'))
-
-macosx_x64 = ToolchainExtender("macosx-x64-pam-clang", macosx)
-macosx_x64.add_feature(PyBuildCustomCFlag('-m64'))
-macosx_x64.add_feature(PyBuildCustomCXXFlag('-m64'))
-macosx_x64.add_feature(PyBuildCustomLinkerFlag('-m64'))
