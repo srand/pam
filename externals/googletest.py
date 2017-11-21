@@ -1,19 +1,41 @@
-from build.model import CXXLibrary, GitClone
+from build.model import cxx_library, GitClone
 
 source = GitClone(
     "googletest-source",
     "https://github.com/google/googletest.git")
 
-googletest = CXXLibrary("googletest")
-googletest.add_dependency(source)
-googletest.add_incpath("output/googletest-source/googletest/include", publish=True)
-googletest.add_incpath("output/googletest-source/googletest/")
-googletest.add_sources("output/googletest-source/googletest/src/gtest-all.cc")
-googletest.add_library("pthread", filter="linux", publish=True)
 
-googlemock = CXXLibrary("googlemock")
-googlemock.add_dependency(source)
-googlemock.add_dependency(googletest)
-googlemock.add_incpath("output/googletest-source/googlemock/include", publish=True)
-googlemock.add_incpath("output/googletest-source/googlemock/")
-googlemock.add_sources("output/googletest-source/googlemock/src/gmock-all.cc")
+googletest = cxx_library(
+    "googletest",
+    sources=[
+        "output/googletest-source/googletest/src/gtest-all.cc"
+    ],
+    incpaths=[
+        "output/googletest-source/googletest/",
+        ("output/googletest-source/googletest/include", {"publish": True})
+    ],
+    libraries=[
+        ("pthread", {"filter": "linux", "publish": True})
+    ],
+    dependencies=[
+        source
+    ]
+)
+
+googlemock = cxx_library(
+    "googlemock",
+    sources=[
+        "output/googletest-source/googlemock/src/gmock-all.cc"
+    ],
+    incpaths=[
+        "output/googletest-source/googlemock/",
+        ("output/googletest-source/googlemock/include", {"publish": True})
+    ],
+    libraries=[
+        ("pthread", {"filter": "linux", "publish": True})
+    ],
+    dependencies=[
+        source,
+        googletest
+    ]
+)

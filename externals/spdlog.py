@@ -1,15 +1,32 @@
-from build.model import CXXExecutable, CXXProject, GitClone
+from build.model import cxx_executable, cxx_project, GitClone
 
 source = GitClone(
     "spdlog-source",
     "https://github.com/gabime/spdlog.git")
 
-spdlog = CXXProject("spdlog")
-spdlog.add_dependency(source)
-spdlog.add_incpath("output/spdlog-source/include", publish=True)
-spdlog.add_library("pthread", filter="linux", publish=True)
+spdlog = cxx_project(
+    "spdlog",
+    incpaths=[
+        ("output/spdlog-source/include", {"publish": True})
+    ],
+    libraries=[
+        ("pthread", {"filter": "linux", "publish": True})
+    ],
+    dependencies=[
+        source
+    ]
+)
 
-spdlog_test = CXXExecutable("spdlog-test")
-spdlog_test.add_dependency(spdlog)
-spdlog_test.add_sources("output/spdlog-source/tests", '.*cpp$')
-spdlog_test.use_feature("language-c++11")
+spdlog_test = cxx_executable(
+    "spdlog-test",
+    sources=[
+        ("output/spdlog-source/tests", {"regex": '.*cpp$'})
+    ],
+    features=[
+        "language-c++11"
+    ],
+    dependencies=[
+        source,
+        spdlog
+    ]
+)

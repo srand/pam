@@ -1,13 +1,13 @@
-from build.model import CXXLibrary, CXXExecutable, GitClone, Source
+from build.model import cxx_library, cxx_executable, GitClone, Source
 from build.tools import Tool, ToolRegistry
 from build.transform import pybuild, msbuild
 from build.tools.directory import PyBuildDirectoryCreator
 import os
 
 
-class ProtobufCompiler(Tool):
+class FlatbufferCompiler(Tool):
     def __init__(self, *args, **kwargs):
-        super(ProtobufCompiler, self).__init__(*args, **kwargs)
+        super(FlatbufferCompiler, self).__init__(*args, **kwargs)
         self._output_ext = ".h"
 
     def _directory(self, cxx_project, dirname):
@@ -59,7 +59,7 @@ class ProtobufCompiler(Tool):
         raise RuntimeError("flatbuffers not supported in this toolchain")
 
 
-ToolRegistry.add(".fbs", ProtobufCompiler())
+ToolRegistry.add(".fbs", FlatbufferCompiler())
 
 
 source = GitClone(
@@ -67,49 +67,74 @@ source = GitClone(
     "https://github.com/google/flatbuffers")
 
 flatbuffers_srcs = [
-    "src/code_generators.cpp",
-    "src/idl_parser.cpp",
-    "src/idl_gen_text.cpp",
-    "src/reflection.cpp",
-    "src/util.cpp"
 ]
 
-flatc_srcs = [
-    "src/idl_gen_cpp.cpp",
-    "src/idl_gen_general.cpp",
-    "src/idl_gen_go.cpp",
-    "src/idl_gen_js.cpp",
-    "src/idl_gen_php.cpp",
-    "src/idl_gen_python.cpp",
-    "src/idl_gen_fbs.cpp",
-    "src/idl_gen_grpc.cpp",
-    "src/idl_gen_json_schema.cpp",
-    "src/flatc.cpp",
-    "src/flatc_main.cpp",
-    "grpc/src/compiler/cpp_generator.cc",
-    "grpc/src/compiler/go_generator.cc",
-]
+flatbuffers = cxx_library(
+    "flatbuffers",
+    sources=[
+        "output/flatbuffers-source/src/code_generators.cpp",
+        "output/flatbuffers-source/src/idl_parser.cpp",
+        "output/flatbuffers-source/src/idl_gen_text.cpp",
+        "output/flatbuffers-source/src/reflection.cpp",
+        "output/flatbuffers-source/src/util.cpp"
+    ],
+    incpaths=[
+        "output/flatbuffers-source",
+        ("output/flatbuffers-source/include", {"publish": True})
+    ],
+    dependencies=[
+        source
+    ],
+    features=[
+        "language-c++11"
+    ]
+)
 
-flatbuffers = CXXLibrary("flatbuffers")
-flatbuffers.add_dependency(source)
-flatbuffers.add_incpath("output/flatbuffers-source/include", publish=True)
-flatbuffers.add_incpath("output/flatbuffers-source")
-flatbuffers.add_sources("output/flatbuffers-source", files=flatbuffers_srcs)
-flatbuffers.use_feature("language-c++11")
+flatc = cxx_executable(
+    "flatc",
+    sources=[
+        "output/flatbuffers-source/src/idl_gen_cpp.cpp",
+        "output/flatbuffers-source/src/idl_gen_general.cpp",
+        "output/flatbuffers-source/src/idl_gen_go.cpp",
+        "output/flatbuffers-source/src/idl_gen_js.cpp",
+        "output/flatbuffers-source/src/idl_gen_php.cpp",
+        "output/flatbuffers-source/src/idl_gen_python.cpp",
+        "output/flatbuffers-source/src/idl_gen_fbs.cpp",
+        "output/flatbuffers-source/src/idl_gen_grpc.cpp",
+        "output/flatbuffers-source/src/idl_gen_json_schema.cpp",
+        "output/flatbuffers-source/src/flatc.cpp",
+        "output/flatbuffers-source/src/flatc_main.cpp",
+        "output/flatbuffers-source/grpc/src/compiler/cpp_generator.cc",
+        "output/flatbuffers-source/grpc/src/compiler/go_generator.cc",
+    ],
+    incpaths=[
+        "output/flatbuffers-source",
+        "output/flatbuffers-source/grpc"
+    ],
+    dependencies=[
+        source,
+        flatbuffers
+    ],
+    features=[
+        "language-c++11"
+    ]
+)
 
-
-flatc = CXXExecutable("flatc")
-flatc.add_dependency(flatbuffers)
-flatc.add_incpath("output/flatbuffers-source")
-flatc.add_incpath("output/flatbuffers-source/grpc")
-flatc.add_sources("output/flatbuffers-source/", files=flatc_srcs)
-flatc.use_feature("language-c++11")
-
-
-example = CXXExecutable("flatbuffers-example")
-example.add_dependency(flatc)
-example.add_sources("output/flatbuffers-source/samples/monster.fbs")
-example.add_sources(
-    "output/flatbuffers-source/samples/sample_binary.cpp",
-    dependencies="output/flatbuffers-source/samples/monster_generated.h")
-example.use_feature("language-c++11")
+example = cxx_executable(
+    "flatbuffers-example",
+    sources=[
+        "output/flatbuffers-source/samples/monster.fbs",
+        ("output/flatbuffers-source/samples/sample_binary.cpp", {
+            "dependencies": [
+                "output/flatbuffers-source/samples/monster_generated.h"
+            ]
+        })
+    ],
+    dependencies=[
+        source,
+        flatc
+    ],
+    features=[
+        "language-c++11"
+    ]
+)

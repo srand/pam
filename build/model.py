@@ -524,3 +524,78 @@ class GitClone(PythonProject, DependencyGroup):
             print(stdout)
             print(stderr)
             raise RuntimeError("git clone failed")
+
+
+def _call(func):
+    def __call(item):
+        if type(item) == dict:
+            return func(**item)
+        elif type(item) == tuple:
+            return func(item[0], **item[1])
+        else:
+            return func(item)
+    return __call
+
+
+def cxx_project(
+    name,
+    macros=[],
+    incpaths=[],
+    features=[],
+    libraries=[],
+    dependencies=[]
+):
+    l = CXXProject(name)
+    map(_call(l.add_macro), macros)
+    map(_call(l.add_incpath), incpaths)
+    map(_call(l.use_feature), features)
+    map(_call(l.add_library), libraries)
+    map(_call(l.add_dependency), dependencies)
+    return l
+
+
+
+def cxx_library(
+    name,
+    sources=[],
+    commands=[],
+    macros=[],
+    incpaths=[],
+    features=[],
+    libraries=[],
+    dependencies=[],
+    toolchains=[]
+):
+    l = CXXLibrary(name)
+    map(_call(l.add_sources), sources)
+    map(_call(l.add_command), commands)
+    map(_call(l.add_macro), macros)
+    map(_call(l.add_incpath), incpaths)
+    map(_call(l.use_feature), features)
+    map(_call(l.add_library), libraries)
+    map(_call(l.add_dependency), dependencies)
+    map(_call(l.add_toolchain), toolchains)
+    return l
+
+
+def cxx_executable(
+    name,
+    sources=[],
+    commands=[],
+    macros=[],
+    incpaths=[],
+    features=[],
+    libraries=[],
+    dependencies=[],
+    toolchains=[]
+):
+    l = CXXExecutable(name)
+    map(_call(l.add_sources), sources)
+    map(_call(l.add_command), commands)
+    map(_call(l.add_macro), macros)
+    map(_call(l.add_incpath), incpaths)
+    map(_call(l.use_feature), features)
+    map(_call(l.add_library), libraries)
+    map(_call(l.add_dependency), dependencies)
+    map(_call(l.add_toolchain), toolchains)
+    return l

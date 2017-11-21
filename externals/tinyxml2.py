@@ -1,15 +1,25 @@
-from build.model import CXXExecutable, CXXLibrary, GitClone
+from build.model import cxx_executable, cxx_library, GitClone
 
 source = GitClone(
     "tinyxml2-source",
     "https://github.com/leethomason/tinyxml2")
 
-tinyxml2 = CXXLibrary("tinyxml2")
-tinyxml2.add_dependency(source)
-tinyxml2.add_incpath("output/tinyxml2-source", publish=True)
-tinyxml2.add_sources("output/tinyxml2-source/tinyxml2.cpp")
+tinyxml2 = cxx_library(
+    "tinyxml2",
+    sources=[
+        "output/tinyxml2-source/tinyxml2.cpp"
+    ],
+    incpaths=[
+        ("output/tinyxml2-source", {"publish": True})
+    ],
+    dependencies=[source]
+)
 
-tinyxml2_test = CXXExecutable("tinyxml2-test")
-tinyxml2_test.add_dependency(tinyxml2)
-tinyxml2_test.add_sources("output/tinyxml2-source/xmltest.cpp")
-tinyxml2_test.use_feature("language-c++11")
+tinyxml2_test = cxx_executable(
+    "tinyxml2-test",
+    sources=[
+        "output/tinyxml2-source/xmltest.cpp"
+    ],
+    features=["language-c++11"],
+    dependencies=[source, tinyxml2]
+)

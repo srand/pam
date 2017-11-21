@@ -1,18 +1,32 @@
-from build.model import CXXLibrary, GitClone
+from build.model import cxx_library, GitClone
 
 source = GitClone(
     "benchmark-source",
     "https://github.com/google/benchmark.git")
 
-benchmark = CXXLibrary("benchmark")
-benchmark.add_dependency(source)
-benchmark.add_incpath("output/benchmark-source/include", publish=True)
-benchmark.add_incpath("output/benchmark-source/")
-benchmark.add_sources("output/benchmark-source/src", ".*\.cc$")
-benchmark.use_feature("language-c++11")
-benchmark.use_feature("optimize", level="full")
-benchmark.add_macro("NDEBUG")
-benchmark.add_macro("HAVE_STD_REGEX")
-benchmark.add_library("pthread", filter="linux", publish=True)
-benchmark.add_library("shlwapi", filter="windows", publish=True)
+benchmark = cxx_library(
+    "benchmark",
+    sources=[
+        ("output/benchmark-source/src", {"regex": ".*\.cc$"})
+    ],
+    incpaths=[
+        "output/benchmark-source/",
+        ("output/benchmark-source/include", {"publish": True})
+    ],
+    features=[
+        "language-c++11",
+        ("optimize", {"level": "full"})
+    ],
+    macros=[
+        "NDEBUG",
+        "HAVE_STD_REGEX"
+    ],
+    libraries=[
+        ("pthread", {"filter": "linux", "publish": True}),
+        ("shlwapi", {"filter": "windows", "publish": True})
+    ],
+    dependencies=[
+        source
+    ]
+)
 
