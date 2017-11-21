@@ -71,7 +71,7 @@ class Thread(threading.Thread):
 					job.execute()
 				self.output.put(job)
 			except Exception as e:
-				self.output.put(e)
+				self.output.put(e.message)
 
 
 class Pool(object):

@@ -103,11 +103,11 @@ available toolchains:
                 transform(project, toolchain)
 
         def transform(project, toolchain=None):
-            if project in completed:
+            if (project, toolchain) in completed:
                 return
-            completed.add(project)
+            completed.add((project, toolchain))
             start_time = time.time()
-            print('===== Checking: %s' % (project.name))
+            print('===== Checking: %s (%s)' % (project.name, toolchain.name if toolchain else "agnostic"))
             if project.transform(toolchain):
                 elapsed = time.time() - start_time
                 print('===== Done: %dm %ds' % (elapsed / 60, elapsed % 60))

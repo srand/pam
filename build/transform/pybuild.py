@@ -16,6 +16,7 @@ from build.transform.toolchain import Toolchain
 from copy import copy
 from os import path, stat, environ, pathsep
 import hashlib
+import sys
 from collections import OrderedDict
 
 
@@ -408,12 +409,14 @@ class CXXProject(Settings):
                     job = pool.get_nowait()
             except Exception as e:
                 print(e)
-                raise
-                break
 
             for job in completed:
-                for consumer in consumes[job.product]:
-                    jobs[consumer.product].remove(job)
+                if type(job) == str:
+                    utils.print_locked(job)
+                    sys.exit(1)
+                else:
+                    for consumer in consumes[job.product]:
+                        jobs[consumer.product].remove(job)
 
         pool.stop()
         return True
