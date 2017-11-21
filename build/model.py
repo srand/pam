@@ -237,8 +237,8 @@ class FeatureGroup(object):
         super(FeatureGroup, self).__init__()
         self.features = []
 
-    def use_feature(self, feature_name, filter=None, **kwargs):
-        feature = _Feature(feature_name, filter, **kwargs)
+    def use_feature(self, name, filter=None, **kwargs):
+        feature = _Feature(name, filter, **kwargs)
         self.features.append(feature)
         return feature
 
