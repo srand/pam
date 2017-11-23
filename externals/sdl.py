@@ -153,6 +153,9 @@ sdl2_mixer = cxx_library(
     incpaths = [
         (_source("."), {"publish": True})
     ],
+    macros = [
+        "MUSIC_WAV",
+    ],
     sources = [
         (_source("."), {"regex": ".*\.c$"})
     ],
