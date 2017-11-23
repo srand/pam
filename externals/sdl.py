@@ -3,7 +3,7 @@ import os
 
 
 version = "SDL2-2.0.7"
-source = URLPackage("sdl2-source", "https://www.libsdl.org/release/{}.zip".format(version))
+source = URLPackage("SDL2-source", "https://www.libsdl.org/release/{}.zip".format(version))
 
 def _source(path):
     return os.path.join("output", "sdl2-source", version, path)
@@ -37,6 +37,13 @@ sdl2 = cxx_library(
         (_source("src/power/linux"), {"regex": ".*\.c$", "filter": "linux"}),
         (_source("src/filesystem/unix"), {"regex": ".*\.c$", "filter": "linux"}),
         (_source("src/timer/unix"), {"regex": ".*\.c$", "filter": "linux"}),
+
+        (_source("src/core/windows"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/joystick/windows"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/joystick/steam"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/power/windows"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/filesystem/windows"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/timer/windows"), {"regex": ".*\.c$", "filter": "windows"}),
     ],
 )
 
@@ -47,6 +54,7 @@ sdl2_main = cxx_library(
     ],
     sources = [
         (_source("src/main/dummy"), {"regex": ".*\.c$", "filter": "linux"}),
+        (_source("src/main/windows"), {"regex": ".*\.c$", "filter": "windows"}),
     ]
 )
 
@@ -63,6 +71,9 @@ sdl2_net = cxx_library(
     name = "SDL2_net",
     incpaths = [
         (_source("."), {"publish": True})
+    ],
+    macros = [
+        ("WIN32", {"filter": "windows"})
     ],
     sources = [
 	_source("SDLnet.c"),
