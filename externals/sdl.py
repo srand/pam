@@ -1,4 +1,5 @@
 from build.model import *
+from externals.freetype import freetype
 import os
 
 
@@ -130,13 +131,12 @@ def _source(path):
 sdl2_ttf = cxx_library(
     name = "SDL2_ttf",
     incpaths = [
-        "/usr/include/freetype2",
         (_source("."), {"publish": True})
     ],
     sources = [
         _source("SDL_ttf.c")
     ],
-    dependencies = [source_ttf, sdl2]
+    dependencies = [source_ttf, sdl2, freetype]
 )
 
 #####################################################################################
