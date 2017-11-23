@@ -140,3 +140,23 @@ sdl2_ttf = cxx_library(
 )
 
 #####################################################################################
+
+version_mixer = "SDL2_mixer-2.0.2"
+
+source_mixer = URLPackage("SDL2_mixer-source", "https://www.libsdl.org/projects/SDL_mixer/release/{}.zip".format(version_mixer))
+
+def _source(path):
+    return os.path.join("output", "SDL2_mixer-source", version_mixer, path)
+
+sdl2_mixer = cxx_library(
+    name = "SDL2_mixer",
+    incpaths = [
+        (_source("."), {"publish": True})
+    ],
+    sources = [
+        (_source("."), {"regex": ".*\.c$"})
+    ],
+    dependencies = [source_mixer, sdl2, freetype]
+)
+
+#####################################################################################
