@@ -1,5 +1,6 @@
 from build.model import *
 from externals.freetype import freetype
+from externals.vorbis import vorbis
 import os
 
 
@@ -13,9 +14,6 @@ sdl2 = cxx_library(
     name = "SDL2",
     incpaths = [
         (_source("include"), {"publish": True})
-    ],
-    commands = [
-        #output = _source("include"),
     ],
     sources = [
         (_source("src"), {"regex": ".*\.c$"}),
@@ -155,11 +153,12 @@ sdl2_mixer = cxx_library(
     ],
     macros = [
         "MUSIC_WAV",
+        "MUSIC_OGG",
     ],
     sources = [
         (_source("."), {"regex": ".*\.c$"})
     ],
-    dependencies = [source_mixer, sdl2, freetype]
+    dependencies = [source_mixer, sdl2, freetype, vorbis]
 )
 
 #####################################################################################
