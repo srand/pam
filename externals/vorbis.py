@@ -6,14 +6,10 @@ version = "libvorbis-1.3.5"
 
 source = URLPackage(
     "vorbis-source", 
-    "http://downloads.xiph.org/releases/ogg/{}.tar.gz".format(version))
+    "http://downloads.xiph.org/releases/vorbis/{}.tar.gz".format(version))
 
 def _source(*path):
-    return os.path.join("output/vorbis-source", *path)
-
-source = URLPackage(
-    "vorbis-source", 
-    "http://downloads.xiph.org/releases/vorbis/{}.tar.xz".format(version))
+    return os.path.join("output/vorbis-source", version, *path)
 
 vorbis_srcs = [
     "mdct.c",
