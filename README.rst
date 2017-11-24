@@ -2,7 +2,7 @@
 PAM - Pun At Make
 =======================
 
-PAM is a portable build tool capable of building C/C++ projects, either through its own build engine or by utilizing third party tools such as MSBuild, Xcode and Make. Projects are defined in Python scripts. 
+PAM is a portable build tool capable of building C/C++ projects, either through its own build engine or by utilizing third party tools such as MSBuild (Visual Studio), Xcode and Make. Projects are defined in Python scripts. 
 
 A key differentiator for PAM is the abstraction and removal of traditional toolchain attributes from projects. In PAM, the toolchain is in fact a project attribute in its own right. This enables a single 
 project to be built using multiple toolchains in different configurations. For example, a project can be built for x86, ARM and MIPS simultaneously, in 32- and 64-bit, debug and release configurations. It's all up to you.
@@ -199,6 +199,45 @@ To extend / create new toolchains:
       "windows-x64-pam-vs15-rtti"
     ]
   )
+  
+Importing External Projects
+---------------------------
+
+Pam provides build definitions for commonly used third-party libraries, for example:
+- gtest
+- gmock
+- flatbuffers
+- protobuf
+- lua
+- pugixml
+- tinyxml
+- cppjson
+- zlib
+- sdl
+
+To use an external dependency in your project, simply import it.
+::
+  from build.model import *
+  from externals.protobuf import *
+  
+  my_library = cxx_library(
+    name = "my_library",
+    sources = [
+      "my_protobuf.proto"
+    ],
+    dependencies = [protobuf, protoc]
+  )
+  
+By importing the externals.protobuf module, the .proto file extension will be registered
+and recognized by all toolchains. During build, the my_protobuf.proto source file is 
+first passed to the protoc compiler and the generated C++ source is subsequently 
+automatically compiled by the selected toolchain. If you add protoc as a dependency 
+to your project, the protoc compiler will also be built using the selected toolchain,
+It will be automatically used to compile your profobuffers. If your project doesn't
+depend on protoc, the executable must exist in your path.
+
+Similarly, you may add support for flatbuffers (.fbs) in your build definition by 
+importing the externals.flatbuffers module.
 
 Toolchains
 ----------
@@ -312,8 +351,10 @@ There following source file extensions are recognized:
 - .cpp
 - .cxx
 - .dds
+- .fbs          (Google Flatbuffers: import externals.flatbuffer)
 - .hlsl
 - .png
+- .proto        (Google Protobuf: import externals.protobuf)
 - .S
 - .wav
 - .xaml
