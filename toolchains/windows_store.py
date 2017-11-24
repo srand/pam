@@ -36,6 +36,22 @@ def NoPrecompiledHeader():
 
 _vs14_x86_vars = VS14VCVars(host="x64", target="x86", store=True)
 
+defaultlibs = [
+    'd2d1',
+    'd3d11',
+    'dxgi',
+    'windowscodecs',
+    'dwrite',
+    'dxguid',
+    'xaudio2',
+    'xinput',
+    'mfcore',
+    'mfplat',
+    'mfreadwrite',
+    'mfuuid'
+]
+
+
 winstore_x86_vs14 = msbuild.CXXToolchain("windows-store-x86-msbuild-vs14", vcvars=_vs14_x86_vars)
 winstore_x86_vs14.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
 winstore_x86_vs14.add_tool('.cc', msvc.MSBuildCXXCompiler(cxx=True))
@@ -58,7 +74,7 @@ winstore_x86_vs14.add_feature(MSBuildProjectMacros.MSVC)
 winstore_x86_vs14.add_feature(MSBuildProjectIncPaths.MSVC)
 winstore_x86_vs14.add_feature(MSBuildProjectLibPaths.MSVC)
 winstore_x86_vs14.add_feature(MSBuildProjectDeps.MSVC)
-winstore_x86_vs14.add_feature(MSBuildLinkLibrary.COMMON)
+winstore_x86_vs14.add_feature(MSBuildLinkLibrary(defaultlibs))
 
 
 _vs14_arm_vars = VS14VCVars(host="x64", target="arm", store=True)
@@ -85,4 +101,4 @@ winstore_arm_vs14.add_feature(MSBuildProjectMacros.MSVC)
 winstore_arm_vs14.add_feature(MSBuildProjectIncPaths.MSVC)
 winstore_arm_vs14.add_feature(MSBuildProjectLibPaths.MSVC)
 winstore_arm_vs14.add_feature(MSBuildProjectDeps.MSVC)
-winstore_arm_vs14.add_feature(MSBuildLinkLibrary.COMMON)
+winstore_arm_vs14.add_feature(MSBuildLinkLibrary(defaultlibs))

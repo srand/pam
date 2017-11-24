@@ -13,6 +13,26 @@ from build.requirement import HostRequirement, EnvRequirement, PathRequirement
 
 import os
 
+defaultlibs = [
+    'd2d1',
+    'd3d11',
+    'dxgi',
+    'windowscodecs',
+    'dwrite',
+    'dxguid',
+    'xaudio2',
+    'xinput',
+    'mfcore',
+    'mfplat',
+    'mfreadwrite',
+    'mfuuid',
+    'user32',
+    'shell32',
+    'gdi32',
+    'ole32',
+    'oleaut32',
+    'Advapi32'
+]
 
 _win_x86_vs12_env = VS12VCVars(arch="amd64_x86")
 _win_x64_vs12_env = VS12VCVars(arch="amd64")
@@ -74,7 +94,7 @@ win_x86_vs12_msbuild.add_feature(MSBuildProjectIncPaths.MSVC)
 win_x86_vs12_msbuild.add_feature(MSBuildProjectLibPaths.MSVC)
 win_x86_vs12_msbuild.add_feature(MSBuildProjectDeps.MSVC)
 win_x86_vs12_msbuild.add_feature(MSBuildProjectLibraries.MSVC)
-win_x86_vs12_msbuild.add_feature(MSBuildLinkLibrary.COMMON)
+win_x86_vs12_msbuild.add_feature(MSBuildLinkLibrary(defaultlibs))
 
 win_x64_vs12_msbuild = msbuild.CXXToolchain("windows-x64-msbuild-vs12", vcvars=_win_x64_vs12_env)
 win_x64_vs12_msbuild.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
@@ -98,7 +118,7 @@ win_x64_vs12_msbuild.add_feature(MSBuildProjectIncPaths.MSVC)
 win_x64_vs12_msbuild.add_feature(MSBuildProjectLibPaths.MSVC)
 win_x64_vs12_msbuild.add_feature(MSBuildProjectDeps.MSVC)
 win_x64_vs12_msbuild.add_feature(MSBuildProjectLibraries.MSVC)
-win_x64_vs12_msbuild.add_feature(MSBuildLinkLibrary.COMMON)
+win_x64_vs12_msbuild.add_feature(MSBuildLinkLibrary(defaultlibs))
 
 
 
@@ -123,7 +143,7 @@ win_x86_vs14_msbuild.add_feature(MSBuildProjectIncPaths.MSVC)
 win_x86_vs14_msbuild.add_feature(MSBuildProjectLibPaths.MSVC)
 win_x86_vs14_msbuild.add_feature(MSBuildProjectDeps.MSVC)
 win_x86_vs14_msbuild.add_feature(MSBuildProjectLibraries.MSVC)
-win_x86_vs14_msbuild.add_feature(MSBuildLinkLibrary.COMMON)
+win_x86_vs14_msbuild.add_feature(MSBuildLinkLibrary(defaultlibs))
 
 win_x64_vs14_msbuild = msbuild.CXXToolchain("windows-x64-msbuild-vs14", vcvars=_win_x64_vs14_env)
 win_x64_vs14_msbuild.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
@@ -146,7 +166,7 @@ win_x64_vs14_msbuild.add_feature(MSBuildProjectIncPaths.MSVC)
 win_x64_vs14_msbuild.add_feature(MSBuildProjectLibPaths.MSVC)
 win_x64_vs14_msbuild.add_feature(MSBuildProjectDeps.MSVC)
 win_x64_vs14_msbuild.add_feature(MSBuildProjectLibraries.MSVC)
-win_x64_vs14_msbuild.add_feature(MSBuildLinkLibrary.COMMON)
+win_x64_vs14_msbuild.add_feature(MSBuildLinkLibrary(defaultlibs))
 
 
 
@@ -170,7 +190,7 @@ win_x86_vs15_msbuild.add_feature(MSBuildProjectIncPaths.MSVC)
 win_x86_vs15_msbuild.add_feature(MSBuildProjectLibPaths.MSVC)
 win_x86_vs15_msbuild.add_feature(MSBuildProjectDeps.MSVC)
 win_x86_vs15_msbuild.add_feature(MSBuildProjectLibraries.MSVC)
-win_x86_vs15_msbuild.add_feature(MSBuildLinkLibrary.COMMON)
+win_x86_vs15_msbuild.add_feature(MSBuildLinkLibrary(defaultlibs))
 
 win_x64_vs15_msbuild = msbuild.CXXToolchain("windows-x64-msbuild-vs15", vcvars=_win_x64_vs15_env)
 win_x64_vs15_msbuild.add_tool('.c', msvc.MSBuildCXXCompiler(cxx=False))
@@ -192,7 +212,7 @@ win_x64_vs15_msbuild.add_feature(MSBuildProjectIncPaths.MSVC)
 win_x64_vs15_msbuild.add_feature(MSBuildProjectLibPaths.MSVC)
 win_x64_vs15_msbuild.add_feature(MSBuildProjectDeps.MSVC)
 win_x64_vs15_msbuild.add_feature(MSBuildProjectLibraries.MSVC)
-win_x64_vs15_msbuild.add_feature(MSBuildLinkLibrary.COMMON)
+win_x64_vs15_msbuild.add_feature(MSBuildLinkLibrary(defaultlibs))
 
 
 
@@ -209,6 +229,8 @@ pam_vs12.add_feature(PyBuildProjectIncPaths.MSVC)
 pam_vs12.add_feature(PyBuildProjectLibPaths.MSVC)
 pam_vs12.add_feature(PyBuildProjectDeps.MSVC)
 pam_vs12.add_feature(PyBuildProjectLibraries.MSVC)
+pam_vs12.add_feature(PyBuildLinkLibrary(defaultlibs))
+pam_vs12.add_feature(PyBuildCustomLinkerFlag('/subsystem:console'))
 
 win_x86_vs12 = ToolchainExtender("windows-x86-pam-vs12", pam_vs12)
 win_x86_vs12.add_tool('.S', msvc.PyBuildCXXCompiler(cxx=False, env=_win_x86_vs12_env))
@@ -242,6 +264,8 @@ pam_vs14.add_feature(PyBuildProjectIncPaths.MSVC)
 pam_vs14.add_feature(PyBuildProjectLibPaths.MSVC)
 pam_vs14.add_feature(PyBuildProjectDeps.MSVC)
 pam_vs14.add_feature(PyBuildProjectLibraries.MSVC)
+pam_vs14.add_feature(PyBuildLinkLibrary(defaultlibs))
+pam_vs14.add_feature(PyBuildCustomLinkerFlag('/subsystem:console'))
 
 
 win_x86_vs14 = ToolchainExtender("windows-x86-pam-vs14", pam_vs14)
@@ -275,6 +299,9 @@ pam_vs15.add_feature(PyBuildProjectIncPaths.MSVC)
 pam_vs15.add_feature(PyBuildProjectLibPaths.MSVC)
 pam_vs15.add_feature(PyBuildProjectDeps.MSVC)
 pam_vs15.add_feature(PyBuildProjectLibraries.MSVC)
+pam_vs15.add_feature(PyBuildLinkLibrary(defaultlibs))
+pam_vs15.add_feature(PyBuildCustomLinkerFlag('/subsystem:console'))
+
 
 win_x86_vs15 = ToolchainExtender("windows-x86-pam-vs15", pam_vs15)
 win_x86_vs15.add_tool('.S', msvc.PyBuildCXXCompiler(cxx=False, env=_win_x86_vs15_env))

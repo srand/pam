@@ -798,19 +798,24 @@ class CXXProject(Project):
     def add_macro(self, key, value=None):
         def key_value(key, value):
             return "{}".format(key) if value is None else "{}={}".format(key, value)
-        self._macros.append(key_value(key, value))
+        if key_value(key, value) not in self._macros:
+            self._macros.append(key_value(key, value))
         self.clcompile.preprocessordefinitions = ";".join(self._macros)
     
     def add_incdir(self, path):
-        self._incdir.append(path)
+        if path not in self._incdir:
+            self._incdir.append(path)
         self.clcompile.additionalincludedirectories = ";".join(self._incdir)
 
     def add_libdir(self, path):
-        self._libdir.append(path)
+        if path not in self._libdir:
+            self._libdir.append(path)
         self.link.additionallibrarydirectories = ";".join(self._libdir)
 
     def add_dependency(self, dep):
-        self._deps.append(dep + ".lib")
+        libname = dep + ".lib"
+        if libname not in self._deps:
+            self._deps.append(libname)
         self.link.additionaldependencies = ";".join(self._deps + ["%(AdditionalDependencies)"])
 
     def transform(self):

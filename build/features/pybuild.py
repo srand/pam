@@ -165,7 +165,7 @@ class PyBuildLinkLibrary(Feature):
 
     def transform(self, project, cxx_project, toolchain, **kwargs):
         for lib in self.libraries:
-            cxx_project.add_dependency(lib)
+            cxx_project.add_library(lib)
 
 
 class GNUFeatureFactory:

@@ -19,16 +19,21 @@ sdl2 = cxx_library(
         (_source("src"), {"regex": ".*\.c$"}),
         (_source("src/atomic"), {"regex": ".*\.c$"}),
         (_source("src/audio"), {"regex": ".*\.c$"}),
+        (_source("src/audio/dummy"), {"regex": ".*\.c$"}),
         (_source("src/cpuinfo"), {"regex": ".*\.c$"}),
         (_source("src/dynapi"), {"regex": ".*\.c$"}),
         (_source("src/events"), {"regex": ".*\.c$"}),
         (_source("src/file"), {"regex": ".*\.c$"}),
+        (_source("src/haptic"), {"regex": ".*\.c$"}),
+        (_source("src/joystick"), {"regex": ".*\.c$"}),
         (_source("src/libm"), {"regex": ".*\.c$"}),
+        (_source("src/power"), {"regex": ".*\.c$"}),
         (_source("src/render"), {"regex": ".*\.c$", "recurse": True}),
         (_source("src/stdlib"), {"regex": ".*\.c$"}),
         (_source("src/thread"), {"regex": ".*\.c$"}),
         (_source("src/timer"), {"regex": ".*\.c$"}),
         (_source("src/video"), {"regex": ".*\.c$"}),
+        (_source("src/video/dummy"), {"regex": ".*\.c$"}),
 
         (_source("src/core/linux"), {"regex": ".*\.c$", "filter": "linux"}),
         (_source("src/joystick/linux"), {"regex": ".*\.c$", "filter": "linux"}),
@@ -37,13 +42,28 @@ sdl2 = cxx_library(
         (_source("src/filesystem/unix"), {"regex": ".*\.c$", "filter": "linux"}),
         (_source("src/timer/unix"), {"regex": ".*\.c$", "filter": "linux"}),
 
+        (_source("src/audio/wasapi"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/audio/directsound"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/audio/disk"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/audio/winmm"), {"regex": ".*\.c$", "filter": "windows"}),
         (_source("src/core/windows"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/filesystem/windows"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/haptic/windows"), {"regex": ".*\.c$", "filter": "windows"}),
         (_source("src/joystick/windows"), {"regex": ".*\.c$", "filter": "windows"}),
         (_source("src/joystick/steam"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/loadso/windows"), {"regex": ".*\.c$", "filter": "windows"}),
         (_source("src/power/windows"), {"regex": ".*\.c$", "filter": "windows"}),
-        (_source("src/filesystem/windows"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/thread/windows/SDL_sysmutex.c"), {"filter": "windows"}),
+        (_source("src/thread/windows/SDL_syssem.c"), {"filter": "windows"}),
+        (_source("src/thread/windows/SDL_systhread.c"), {"filter": "windows"}),
+        (_source("src/thread/windows/SDL_systls.c"), {"filter": "windows"}),
+        (_source("src/thread/generic/SDL_syscond.c"), {"filter": "windows"}),
         (_source("src/timer/windows"), {"regex": ".*\.c$", "filter": "windows"}),
+        (_source("src/video/windows"), {"regex": ".*\.c$", "filter": "windows"}),
     ],
+    libraries = [
+        ("version", {"filter": "windows", "publish": True})
+    ]
 )
 
 sdl2_main = cxx_library(
@@ -79,6 +99,12 @@ sdl2_net = cxx_library(
 	_source("SDLnetTCP.c"),
 	_source("SDLnetUDP.c"),
 	_source("SDLnetselect.c"),
+    ],
+    libraries = [
+        ("iphlpapi", {"filter": "windows", "publish": True}),
+        ("ws2_32", {"filter": "windows", "publish": True}),
+        ("winmm", {"filter": "windows", "publish": True}),
+        ("imm32", {"filter": "windows", "publish": True}),
     ],
     dependencies = [source_net, sdl2]
 )

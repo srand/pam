@@ -32,6 +32,7 @@ vorbis_srcs = [
     "sharedbook.c",
     "lookup.c",
     "bitrate.c",
+    "vorbisfile.c",
 ]
 
 vorbis = cxx_library(

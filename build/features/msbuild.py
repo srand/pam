@@ -9,7 +9,7 @@
 ##############################################################################
 
 from build.feature import Feature
-from build.model import CXXLibrary
+from build.model import CXXLibrary, CXXExecutable
 import os
 
 
@@ -112,21 +112,12 @@ class _MSBuildLinkLibrary(Feature):
         self.libraries = libraries if type(libraries) == list else [libraries]
 
     def transform(self, project, cxx_project, toolchain, **kwargs):
-        for lib in self.libraries:
-            cxx_project.add_dependency(lib)
+        if isinstance(project, CXXExecutable):
+            for lib in project.get_libraries(toolchain, inherited=True):
+                cxx_project.add_dependency(lib.name)
+            for lib in self.libraries:
+                cxx_project.add_dependency(lib)
 
 
 class MSBuildLinkLibrary(_MSBuildLinkLibrary):
-    COMMON = _MSBuildLinkLibrary([
-        'd2d1',
-        'd3d11',
-        'dxgi',
-        'windowscodecs',
-        'dwrite',
-        'dxguid',
-        'xaudio2',
-        'xinput',
-        'mfcore',
-        'mfplat',
-        'mfreadwrite',
-        'mfuuid'])
+    pass
