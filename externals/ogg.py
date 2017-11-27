@@ -1,4 +1,5 @@
 from build.model import *
+import os
 
 
 version = "libogg-1.3.3"
@@ -14,7 +15,11 @@ class PatchedURLPackage(URLPackage):
     def transform(self, *args, **kwargs):
         super(PatchedURLPackage, self).transform(*args, **kwargs)
 
-        with open(_source("include", "ogg", "config_types.h"), "w") as f:
+        config_types = _source("include", "ogg", "config_types.h")
+        if os.path.exists(config_types):
+            return
+        
+        with open(config_types, "w") as f:
             f.write("""
 #ifndef CONFIG_TYPES_H
 #define CONFIG_TYPES_H

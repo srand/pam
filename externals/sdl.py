@@ -8,7 +8,7 @@ version = "SDL2-2.0.7"
 source = URLPackage("SDL2-source", "https://www.libsdl.org/release/{}.zip".format(version))
 
 def _source(path):
-    return os.path.join("output", "sdl2-source", version, path)
+    return os.path.join("output", "SDL2-source", version, path)
 
 sdl2 = cxx_library(
     name = "SDL2",
@@ -63,7 +63,8 @@ sdl2 = cxx_library(
     ],
     libraries = [
         ("version", {"filter": "windows", "publish": True})
-    ]
+    ],
+    dependencies = [source]
 )
 
 sdl2_main = cxx_library(
