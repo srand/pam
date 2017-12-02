@@ -203,11 +203,12 @@ class FileList(HashableMixin, Job):
 
 
 class Command(HashableMixin, Job):
-    def __init__(self, product, cmdline, info=None, env=None):
+    def __init__(self, product, cmdline, info=None, env=None, ignore_error=False):
         super(Command, self).__init__(product)
         self._cmdline = cmdline
         self._info = info
         self._env = env
+        self._ignore_error = ignore_error
 
     @property
     def cmdline(self):
@@ -228,7 +229,7 @@ class Command(HashableMixin, Job):
         if build.verbose:
             utils.print_locked(self._cmdline)
         rc, stdout, stderr = utils.execute(self._cmdline, self._env, output=False)
-        if rc != 0: 
+        if rc != 0 and not self._ignore_error: 
             utils.print_locked("{}", "\n".join(stdout))
             utils.print_locked("{}", "\n".join(stderr))
             raise RuntimeError('job failed: ' + self._cmdline)

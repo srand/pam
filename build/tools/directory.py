@@ -17,12 +17,14 @@ from os import path
 
 class Directory(pybuild.Command):
     def __init__(self, dirname):
+        ignore_error = False
         if platform.system() == "Windows":
             cmdline = "cmd /c if not exist \"{dir}\" mkdir \"{dir}\"".format(dir=dirname)
+            ignore_error = True
         else:
             cmdline = "mkdir -p \"{dir}\"".format(dir=dirname)
         info = ' [MKDIR] {}'.format(dirname)
-        super(Directory, self).__init__(dirname, cmdline, info)
+        super(Directory, self).__init__(dirname, cmdline, info, ignore_error=ignore_error)
 
     @property
     def required(self):
